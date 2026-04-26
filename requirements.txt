@@ -1,2 +1,6 @@
 kaggle
 pyspark
+matplotlib
+pandas
+seaborn
+jupyter

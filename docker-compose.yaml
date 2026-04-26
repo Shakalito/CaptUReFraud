@@ -2,5 +2,7 @@ services:
   spark:
     build: .
     container_name: capturefraud
+    ports:
+      - "8888:8888"
     volumes:
       - .:/app
