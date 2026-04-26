@@ -1,0 +1,6 @@
+services:
+  spark:
+    build: .
+    container_name: capturefraud
+    volumes:
+      - .:/app
