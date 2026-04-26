@@ -1,4 +1,4 @@
-# CapUReFraud
+# CaptUReFraud
 
 
 - `data/raw/` – raw downloaded dataset (not tracked)
@@ -21,3 +21,10 @@ or place it manually from [here](https://www.kaggle.com/datasets/rupakroy/online
 
 For detailed setup instructions see [here](scripts/README.md).
 
+## Running the project
+In the root directory: 
+```bash
+docker compose up --build
+```
+Then open: http://localhost:8888
+(Token: _fraud123_)
