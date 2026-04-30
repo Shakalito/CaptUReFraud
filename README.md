@@ -39,3 +39,13 @@ The pipeline includes:
 - log transformation of transaction amount
 - categorical encoding
 - cleaned dataset export to `/data/processed/`
+
+## Data Pipeline
+
+- `notebooks/01_eda.ipynb` – exploratory data analysis
+- `notebooks/02_preprocessing.ipynb` – data cleaning and feature engineering
+- `notebooks/03_dataset_preparation.ipynb` – final dataset preparation for ML
+
+Additional details about dataset and ML setup are available in:
+- `docs/eda.md`
+- `docs/ml_dataset.md`
