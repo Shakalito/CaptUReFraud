@@ -228,3 +228,6 @@ __marimo__/
 __pycache__/
 *.pyc
 /CaptUReVenv/
+
+
+.Trash-0/

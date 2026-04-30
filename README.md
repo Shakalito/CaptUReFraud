@@ -28,3 +28,14 @@ docker compose up --build
 ```
 Then open: http://localhost:8888
 (Token: _fraud123_)
+
+## Data Preprocessing
+
+Data preprocessing is implemented in PySpark and available in:
+`notebooks/02_preprocessing.ipynb`
+
+The pipeline includes:
+- feature engineering (balance deltas, error flags)
+- log transformation of transaction amount
+- categorical encoding
+- cleaned dataset export to `/data/processed/`
