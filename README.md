@@ -56,3 +56,4 @@ Additional details about dataset and ML setup are available in:
 - `notebooks/05_baseline_model.ipynb` – baseline Random Forest model training
 - `notebooks/06_model_evaluation.ipynb` – model evaluation and metrics calculation
 - `notebooks/07_handle_imbalance.ipynb` – handling class imbalance using class weighting
+- `notebooks/08_model_persistence.ipynb` - saving and loading trained model for reuse in API and simulation
