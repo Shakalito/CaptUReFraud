@@ -49,3 +49,10 @@ The pipeline includes:
 Additional details about dataset and ML setup are available in:
 - `docs/eda.md`
 - `docs/ml_dataset.md`
+
+## Model Training
+
+- `notebooks/04_model_setup.ipynb` – loading prepared datasets and verifying ML-ready structure
+- `notebooks/05_baseline_model.ipynb` – baseline Random Forest model training
+- `notebooks/06_model_evaluation.ipynb` – model evaluation and metrics calculation
+- `notebooks/07_handle_imbalance.ipynb` – handling class imbalance using class weighting
