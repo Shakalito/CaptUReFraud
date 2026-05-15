@@ -3,6 +3,7 @@ services:
     build: .
     container_name: capturefraud
     ports:
-      - "8888:8888"
+      - "8888:8888" # jupyter lab
+      - "4040:4040" # spark ui
     volumes:
       - .:/app

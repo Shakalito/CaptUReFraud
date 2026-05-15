@@ -5,7 +5,7 @@ import zipfile
 
 
 # Where to save data and what to download from Kaggle
-DATA_DIR = "data/raw"
+DATA_DIR = "../data/raw"
 DATASET = "rupakroy/online-payments-fraud-detection-dataset"
 
 
