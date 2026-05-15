@@ -1,9 +1,33 @@
 services:
-  spark:
+  app:
     build: .
-    container_name: capturefraud
-    ports:
-      - "8888:8888" # jupyter lab
-      - "4040:4040" # spark ui
+    container_name: capturefraud-app
+    working_dir: /app
     volumes:
       - .:/app
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "4040:4040"
+    command: tail -f /dev/null
+
+  jupyter:
+    build: .
+    container_name: capturefraud-jupyter
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "8888:8888"
+      - "4041:4040"
+    command: >
+      jupyter lab
+      --ip=0.0.0.0
+      --allow-root
+      --no-browser
+      --ServerApp.token=fraud123
+      --ServerApp.password=
+    profiles:
+      - jupyter
