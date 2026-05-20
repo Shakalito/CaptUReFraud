@@ -166,3 +166,29 @@ Model training was initially developed and validated in notebooks:
 - `notebooks/08_model_persistence.ipynb` – saving and loading trained model for reuse in API and simulation
 
 The current trained model is expected at: `models/fraud_model/`
+
+### Reproducible model training
+
+The model can be regenerated without running notebooks by using the training script.
+
+The script expects processed training data at:
+
+`data/processed/train/`
+
+Run inside the Docker container:
+
+```bash
+python3 scripts/train_model.py
+```
+The script:
+
+- loads processed training data,
+- adds class weights for imbalanced fraud detection,
+- trains a Spark MLlib Random Forest pipeline,
+- saves the trained model to models/fraud_model/.
+
+After training, verify the model with:
+
+```bash
+python3 scripts/predict_sample.py
+```
