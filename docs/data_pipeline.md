@@ -45,6 +45,32 @@ The preprocessing pipeline includes:
 
 Processed data is not tracked by Git.
 
+## Reproducible preprocessing script
+
+The raw-to-processed data preparation can be run without notebooks using:
+
+```bash
+python3 scripts/prepare_data.py
+```
+
+The script:
+
+- loads raw CSV files from data/raw/,
+- validates the expected raw schema,
+- applies feature engineering,
+- creates amount_log,
+- creates balance delta features,
+- creates balance error flags,
+- indexes transaction type into type_index,
+- assembles the final features vector,
+- creates the binary label column,
+- splits the dataset into train and test sets,
+- writes processed datasets to:
+- data/processed/train/
+- data/processed/test/
+
+This script makes the project reproducible from the downloaded raw dataset to ML-ready Spark datasets.
+
 ## ML dataset preparation
 
 Final ML-ready dataset preparation was initially developed in: `notebooks/03_dataset_preparation.ipynb`

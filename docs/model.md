@@ -34,6 +34,15 @@ The model can be regenerated without running notebooks by using the training scr
 
 Run inside the Docker container:
 
+Before training, make sure processed datasets exist.
+
+If needed, generate them from raw data:
+
+```bash
+python3 scripts/prepare_data.py
+```
+Then train the model:
+
 ```bash
 python3 scripts/train_model.py
 ```
