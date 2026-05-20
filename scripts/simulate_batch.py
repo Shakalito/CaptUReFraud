@@ -43,7 +43,14 @@ def main() -> None:
             "prediction",
             "fraud_probability",
             "decision",
+            "prediction_outcome",
+            "fraud_correctly_detected",
+            "fraud_missed",
+            "legit_incorrectly_blocked",
         ).show(truncate=False)
+
+        print("Aggregated simulation results:")
+        engine.aggregate_results(result_df).show(truncate=False)
 
     finally:
         spark.stop()

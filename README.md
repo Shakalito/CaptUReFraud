@@ -239,3 +239,28 @@ The simulation output contains:
 - decision: allow or block.
 
 This module is designed to be reused later by the backend API and frontend UI.
+
+## Feedback and outcome tracking
+
+Feedback logic is implemented in: `src/simulation/feedback.py`
+
+The simulation engine compares true labels with model predictions and analyst-facing decisions.
+
+It tracks:
+
+- prediction outcome: `TP`, `FP`, `TN`, `FN`
+- whether fraud was correctly detected
+- whether fraud was missed
+- whether a legitimate transaction was incorrectly blocked
+
+Run a feedback sample inside the Docker container:
+
+```bash
+python3 scripts/feedback_sample.py
+```
+
+Batch simulation also includes feedback columns:
+```bash
+python3 scripts/simulate_batch.py
+```
+Aggregated results can be derived from simulation output and used to build confusion-matrix-like summaries.

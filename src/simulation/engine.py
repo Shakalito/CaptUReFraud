@@ -37,6 +37,24 @@ class SimulationEngine:
         ).withColumn(
             "decision",
             when(col("fraud_probability") >= self.config.threshold, "block").otherwise("allow"),
+        ).withColumn(
+            "prediction_outcome",
+            when((col("label") == 1) & (col("prediction") == 1), "TP")
+            .when((col("label") == 0) & (col("prediction") == 1), "FP")
+            .when((col("label") == 0) & (col("prediction") == 0), "TN")
+            .otherwise("FN"),
+        ).withColumn(
+            "fraud_correctly_detected",
+            (col("label") == 1) & (col("decision") == "block"),
+        ).withColumn(
+            "fraud_missed",
+            (col("label") == 1) & (col("decision") == "allow"),
+        ).withColumn(
+            "legit_correctly_allowed",
+            (col("label") == 0) & (col("decision") == "allow"),
+        ).withColumn(
+            "legit_incorrectly_blocked",
+            (col("label") == 0) & (col("decision") == "block"),
         )
 
         return result_df.drop("probability_array")
@@ -50,6 +68,11 @@ class SimulationEngine:
             "prediction",
             "fraud_probability",
             "decision",
+            "prediction_outcome",
+            "fraud_correctly_detected",
+            "fraud_missed",
+            "legit_correctly_allowed",
+            "legit_incorrectly_blocked",
         ).collect()
 
         return [
@@ -59,9 +82,20 @@ class SimulationEngine:
                 "prediction": int(row["prediction"]),
                 "fraud_probability": float(row["fraud_probability"]),
                 "decision": row["decision"],
+                "prediction_outcome": row["prediction_outcome"],
+                "fraud_correctly_detected": bool(row["fraud_correctly_detected"]),
+                "fraud_missed": bool(row["fraud_missed"]),
+                "legit_correctly_allowed": bool(row["legit_correctly_allowed"]),
+                "legit_incorrectly_blocked": bool(row["legit_incorrectly_blocked"]),
             }
             for row in rows
         ]
+
+    def aggregate_results(self, simulation_df: DataFrame) -> DataFrame:
+        return simulation_df.groupBy(
+            "prediction_outcome",
+            "decision",
+        ).count()
 
     def _validate_config(self) -> None:
         if not 0.0 <= self.config.threshold <= 1.0:
