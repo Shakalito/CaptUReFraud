@@ -1,4 +1,4 @@
-# Dataset Setup (Kaggle)
+# Dataset Setup
 
 This project requires downloading a dataset from Kaggle.
 
@@ -21,9 +21,9 @@ which ensures a reproducible setup.
 ### Windows
 
 1. Create folder:
-`C:\Users<your-username>\.kaggle\`
+`C:\Users\<your-username>\.kaggle\`
 2. Move `kaggle.json` into this folder:
-`C:\Users<your-username>\.kaggle\kaggle.json`
+`C:\Users\<your-username>\.kaggle\kaggle.json`
 
 ### Linux / macOS
 
@@ -34,12 +34,19 @@ mv kaggle.json ~/.kaggle/
 chmod 600 ~/.kaggle/kaggle.json
 ```
 ---
-## 3. Install dependencies 
-(If not already installed via requirements.txt)
+## 3. Install dependencies
+
+The recommended workflow is Docker-based. Build the image from the project root:
+
+```bash
+docker compose build --no-cache
+```
+For manual local execution outside Docker, install:
 ```bash
 pip install kaggle
 ```
-After installing Kaggle, verify that it works:
+
+Inside the container, verify:
 
 ```bash
 kaggle --version
@@ -52,10 +59,17 @@ If not, go to the troubleshooting section.
 
 ---
 ## 4. Download dataset
-From project root directory:
+From the project root directory, start the Docker app container:
+
 ```bash
-python scripts/download_data.py
+docker compose up -d app
+docker compose exec app bash
 ```
+Inside the container, run:
+```bash
+python3 scripts/download_data.py
+```
+
 The dataset will be saved to: `data/raw`
 
 ---
@@ -80,7 +94,7 @@ username → your Kaggle profile name
 key → from Kaggle API section
 ```
 ### 5.2 Script does nothing
-Dataset propably already exists in data/raw
+Dataset probably already exists in `data/raw`
 
 ### 5.3 `kaggle --version` fails
 Ensure kaggle is installed
@@ -88,9 +102,6 @@ Ensure kaggle is installed
 pip install kaggle
 ```
 - Ensure `kaggle.json` is correctly placed in .kaggle directory
-
-### 5.4 Different problems
-All the answears are under this [link](https://letmegooglethat.com/?q=why+doesn%27t+it+work%3F)
 
 --- 
 ### Note:
