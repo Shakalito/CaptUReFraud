@@ -210,3 +210,32 @@ After training, verify the model with:
 ```bash
 python3 scripts/predict_sample.py
 ```
+
+## Simulation engine
+
+The transaction simulation engine is implemented in: `src/simulation/engine.py`
+
+It combines:
+
+- model prediction,
+- fraud probability extraction,
+- threshold-based decision logic.
+
+The default decision threshold is: `0.8`
+
+The engine uses native Spark column operations and `vector_to_array` to extract fraud probability from the Spark ML probability vector, avoiding Python UDF serialization issues.
+
+Run a sample batch simulation inside the Docker container:
+
+```bash
+python3 scripts/simulate_batch.py
+```
+
+The simulation output contains:
+
+- original processed transaction data,
+- model prediction,
+- fraud probability,
+- decision: allow or block.
+
+This module is designed to be reused later by the backend API and frontend UI.
