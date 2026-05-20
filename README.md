@@ -288,3 +288,26 @@ python3 scripts/evaluate_simulation.py
 ```
 
 The cost estimation is intentionally simplified. It is used to show how model and decision thresholds can affect business outcomes, not only ML metrics.
+
+
+## End-to-end batch simulation
+
+The full batch simulation script is available in: `scripts/run_batch_simulation.py`
+
+It runs the complete simulation pipeline on the processed test dataset:
+
+- loads `data/processed/test/`,
+- loads the trained model from `models/fraud_model/`,
+- applies model prediction,
+- calculates fraud probability,
+- applies threshold-based decision logic,
+- adds feedback and outcome tracking columns,
+- calculates business-level metrics,
+- saves final results to `data/processed/simulation_results/`.
+
+Run inside the Docker container:
+
+```bash
+python3 scripts/run_batch_simulation.py
+```
+The generated simulation output is stored as Parquet files and is not tracked by Git.
