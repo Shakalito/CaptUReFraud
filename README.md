@@ -135,10 +135,28 @@ Run it inside the Docker container:
 python3 scripts/predict_sample.py
 ```
 
+## Decision logic
+
+Decision logic is implemented in: `src/simulation/decision.py`
+
+It converts model fraud probability into an operational transaction decision.
+
+The default decision rule is:
+
+`block` if fraud probability is greater than or equal to the configured threshold, otherwise `allow`.
+
+Example:
+
+```bash
+python3 scripts/decision_sample.py
+```
+
+The threshold can be adjusted without changing the model.
+
+
 ## Data Preprocessing
 
-Data preprocessing is implemented in PySpark and available in:
-`notebooks/02_preprocessing.ipynb`
+Data preprocessing is implemented in PySpark and available in: `notebooks/02_preprocessing.ipynb`
 
 The pipeline includes:
 - feature engineering (balance deltas, error flags)
