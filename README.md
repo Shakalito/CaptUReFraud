@@ -264,3 +264,27 @@ Batch simulation also includes feedback columns:
 python3 scripts/simulate_batch.py
 ```
 Aggregated results can be derived from simulation output and used to build confusion-matrix-like summaries.
+
+## Business-level simulation metrics
+
+Business metrics are implemented in: `src/simulation/metrics.py`
+
+The metrics are calculated from simulation output, not directly from raw model output.
+
+Tracked metrics include:
+
+- fraud recall,
+- detected frauds,
+- missed frauds,
+- blocked legitimate transactions,
+- estimated fraud loss,
+- estimated blocking cost,
+- estimated total cost.
+
+Run inside the Docker container:
+
+```bash
+python3 scripts/evaluate_simulation.py
+```
+
+The cost estimation is intentionally simplified. It is used to show how model and decision thresholds can affect business outcomes, not only ML metrics.
