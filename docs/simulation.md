@@ -145,3 +145,19 @@ Run inside the Docker container:
 python3 scripts/run_batch_simulation.py
 ```
 The generated simulation output is stored as Parquet files and **is not** tracked by Git.
+
+## Full raw-to-simulation workflow
+
+Inside the Docker container, the complete local workflow is:
+
+```bash
+python3 scripts/prepare_data.py
+python3 scripts/train_model.py
+python3 scripts/run_batch_simulation.py
+```
+
+This workflow:
+
+creates processed train/test datasets from raw data,
+trains and saves the model,
+runs full batch simulation on the processed test dataset.
