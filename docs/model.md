@@ -1,61 +1,101 @@
-# Model Overview
+# Model overview
 
-## Model Type
+---
 
-Random Forest classifier (Spark MLlib)
+## Model type
+
+Random Forest classifier using Spark MLlib.
 
 ## Problem
 
 Binary classification:
-- 0 → legitimate transaction
-- 1 → fraud
+
+- `0` – legitimate transaction
+- `1` – fraud
 
 ## Input
 
-Model expects:
-- `features` column (Vector)
-- generated using VectorAssembler
+The current model expects processed input data with:
 
-## Training
+- `features` column: Spark ML vector,
+- `label` column: target variable used during training and evaluation.
 
-Model is trained on:
-- `/data/processed/train`
+Raw transactions must be transformed by the preprocessing pipeline before prediction.
 
-Tested on:
-- `/data/processed/test`
+## Training data
 
-## Imbalance Handling
+Model is trained on: `data/processed/train/`
 
-Severe class imbalance (~0.13% fraud)
+Tested on: `data/processed/test/`
 
-Handled using:
-- class weighting (`weightCol`)
+## Reproducible model training
 
-## Performance Focus
+The model can be regenerated without running notebooks by using the training script.
+
+Run inside the Docker container:
+
+```bash
+python3 scripts/train_model.py
+```
+
+The script:
+
+- loads processed training data from `data/processed/train/`,
+- adds class weights for imbalanced fraud detection,
+- trains a Spark MLlib Random Forest pipeline,
+- saves the trained model to `models/fraud_model/`.
+
+After training, verify the model with:
+```bash
+python3 scripts/predict_sample.py
+```
+
+## Imbalance handling
+
+The dataset has severe class imbalance.
+
+Fraud transactions represent only a small percentage of all transactions.
+
+Class imbalance is handled using class weighting through Spark MLlib `weightCol`.
+
+This helps the model pay more attention to the minority fraud class.
+
+## Performance focus
 
 Primary metric:
-- Fraud Recall (minimize missed fraud cases)
 
-Secondary:
-- Precision
-- F1-score
+- fraud recall: minimize missed fraud cases.
+
+Secondary metrics:
+
+- precision,
+- F1-score,
+- confusion matrix.
 
 ## Output
 
-Model produces:
-- `prediction` (0 or 1)
-- `probability` (confidence score)
+The model produces:
+
+prediction: predicted class, 0 or 1,
+probability: vector with class probabilities.
+
+For fraud detection, the important value is the probability of class 1.
 
 ## Persistence
 
-Saved to:
-`/models/fraud_model`
+The trained model is saved to: `models/fraud_model/`
 
+The directory is not tracked by Git and should be regenerated locally.
 
-Can be loaded using:
-`PipelineModel.load(...)` 
+The model is saved as a Spark PipelineModel and can be loaded using:
 
-### Notes
-- Model is part of full pipeline (no manual preprocessing needed)
-- Features must match training pipeline
-- Do not modify processed datasets manually
+```bash
+PipelineModel.load("models/fraud_model")
+```
+
+## Notes
+- The persisted model is saved as a Spark `PipelineModel`.
+- The current prediction interface expects processed input data with a features column.
+- Raw transactions must be transformed by the preprocessing pipeline before prediction.
+- Feature order and vector structure must match the training pipeline.
+- Do not modify processed datasets manually.

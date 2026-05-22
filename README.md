@@ -1,59 +1,40 @@
 # CaptUReFraud
 
+CaptUReFraud is a Spark-based fraud detection project focused on financial transaction analysis, model-based fraud prediction, and simulation of analyst decisions.
+
+## Project structure
 
 - `data/raw/` – raw downloaded dataset (not tracked)
-- `data/processed/` – cleaned datasets and intermediate artifacts
+- `data/processed/` – cleaned datasets and intermediate artifacts (not tracked)
 - `notebooks/` – exploratory analysis and experiments
-- `src/` – source code (data processing, modeling)
-- `scripts/` – utility scripts (e.g., dataset download)
+- `src/` – source code for data processing, modeling, simulation, and application logic
+- `scripts/` – utility scripts for dataset handling, training, prediction, and development tasks
 - `models/` – trained models (not tracked)
-
+- `docs/` – additional project documentation
 
 ## Dataset
 
-This project uses a dataset from Kaggle.
+This project uses a dataset from Kaggle: [Online Payments Fraud Detection Dataset](https://www.kaggle.com/datasets/rupakroy/online-payments-fraud-detection-dataset)
 
-To download the dataset automatically run
-```bash
-python scripts/download_data.py
-```
-or place it manually from [here](https://www.kaggle.com/datasets/rupakroy/online-payments-fraud-detection-dataset) and place it in `/data/raw`
+Raw data is not tracked by Git.
 
-For detailed setup instructions see [here](scripts/README.md).
+For dataset setup instructions, see: [`docs/data_setup.md`](docs/data_setup.md).
 
 ## Running the project
-In the root directory: 
-```bash
-docker compose up --build
-```
-Then open: http://localhost:8888
-(Token: _fraud123_)
 
-## Data Preprocessing
+The project is intended to run inside Docker.
 
-Data preprocessing is implemented in PySpark and available in:
-`notebooks/02_preprocessing.ipynb`
+For Docker setup and runtime commands, see: [`docs/docker.md`](docs/docker.md).
 
-The pipeline includes:
-- feature engineering (balance deltas, error flags)
-- log transformation of transaction amount
-- categorical encoding
-- cleaned dataset export to `/data/processed/`
+For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
 
-## Data Pipeline
+## Documentation
 
-- `notebooks/01_eda.ipynb` – exploratory data analysis
-- `notebooks/02_preprocessing.ipynb` – data cleaning and feature engineering
-- `notebooks/03_dataset_preparation.ipynb` – final dataset preparation for ML
-
-Additional details about dataset and ML setup are available in:
-- `docs/eda.md`
-- `docs/ml_dataset.md`
-
-## Model Training
-
-- `notebooks/04_model_setup.ipynb` – loading prepared datasets and verifying ML-ready structure
-- `notebooks/05_baseline_model.ipynb` – baseline Random Forest model training
-- `notebooks/06_model_evaluation.ipynb` – model evaluation and metrics calculation
-- `notebooks/07_handle_imbalance.ipynb` – handling class imbalance using class weighting
-- `notebooks/08_model_persistence.ipynb` - saving and loading trained model for reuse in API and simulation
+- [Dataset setup](docs/data_setup.md) – Kaggle dataset download and raw data setup
+- [Docker setup](docs/docker.md) – Docker runtime, app container, Jupyter profile, and basic commands
+- [EDA notes](docs/eda.md) – exploratory data analysis observations and fraud distribution notes
+- [Data pipeline](docs/data_pipeline.md) – preprocessing, feature engineering, and train/test dataset preparation
+- [ML dataset](docs/ml_dataset.md) – structure of the final Spark ML dataset with `features` and `label`
+- [Model overview](docs/model.md) – Random Forest model, class weighting, training, prediction output, and persistence
+- [Simulation engine](docs/simulation.md) – prediction interface, decision logic, feedback tracking, metrics, and batch simulation
+- [Development workflow](docs/development.md) – Git workflow, commit convention, tests, and local artifacts
