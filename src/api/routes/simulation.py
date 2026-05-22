@@ -3,9 +3,10 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, Query
 
-from src.api.schemas import BatchSimulationResponse, SimulationRecordResponse
+from src.api.schemas import BatchSimulationResponse, BusinessMetricsResponse, SimulationRecordResponse
 from src.common.spark import create_spark_session
 from src.simulation.engine import SimulationConfig, SimulationEngine
+from src.simulation.metrics import CostConfig, calculate_business_metrics
 from src.simulation.predictor import FraudPredictor
 
 
@@ -20,11 +21,7 @@ router = APIRouter(
 )
 
 
-@router.get("/batch", response_model=BatchSimulationResponse)
-def run_batch_simulation(
-    limit: int = Query(default=10, ge=1, le=100),
-    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
-) -> BatchSimulationResponse:
+def validate_simulation_artifacts() -> None:
     if not MODEL_PATH.exists():
         raise HTTPException(
             status_code=503,
@@ -43,6 +40,26 @@ def run_batch_simulation(
             ),
         )
 
+
+def create_simulation_engine(spark, threshold: float) -> SimulationEngine:
+    predictor = FraudPredictor(
+        spark=spark,
+        model_path=MODEL_PATH,
+    )
+
+    return SimulationEngine(
+        predictor=predictor,
+        config=SimulationConfig(threshold=threshold),
+    )
+
+
+@router.get("/batch", response_model=BatchSimulationResponse)
+def run_batch_simulation(
+    limit: int = Query(default=10, ge=1, le=100),
+    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
+) -> BatchSimulationResponse:
+    validate_simulation_artifacts()
+
     spark = create_spark_session("ApiBatchSimulation")
 
     try:
@@ -54,14 +71,9 @@ def run_batch_simulation(
                 detail="No transactions found in processed test dataset.",
             )
 
-        predictor = FraudPredictor(
+        engine = create_simulation_engine(
             spark=spark,
-            model_path=MODEL_PATH,
-        )
-
-        engine = SimulationEngine(
-            predictor=predictor,
-            config=SimulationConfig(threshold=threshold),
+            threshold=threshold,
         )
 
         simulation_df = engine.simulate_batch(transactions_df)
@@ -97,6 +109,54 @@ def run_batch_simulation(
             threshold=threshold,
             count=len(records),
             records=records,
+        )
+
+    finally:
+        spark.stop()
+
+
+@router.get("/metrics", response_model=BusinessMetricsResponse)
+def get_simulation_metrics(
+    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
+) -> BusinessMetricsResponse:
+    validate_simulation_artifacts()
+
+    spark = create_spark_session("ApiSimulationMetrics")
+
+    try:
+        transactions_df = spark.read.parquet(str(TEST_DATA_PATH))
+
+        if transactions_df.count() == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="No transactions found in processed test dataset.",
+            )
+
+        engine = create_simulation_engine(
+            spark=spark,
+            threshold=threshold,
+        )
+
+        simulation_df = engine.simulate_batch(transactions_df)
+
+        metrics = calculate_business_metrics(
+            simulation_df=simulation_df,
+            cost_config=CostConfig(
+                missed_fraud_cost=1000.0,
+                blocked_legit_cost=50.0,
+            ),
+        )
+
+        return BusinessMetricsResponse(
+            total_transactions=metrics.total_transactions,
+            total_frauds=metrics.total_frauds,
+            detected_frauds=metrics.detected_frauds,
+            missed_frauds=metrics.missed_frauds,
+            blocked_legit_transactions=metrics.blocked_legit_transactions,
+            fraud_recall=metrics.fraud_recall,
+            estimated_fraud_loss=metrics.estimated_fraud_loss,
+            estimated_blocking_cost=metrics.estimated_blocking_cost,
+            estimated_total_cost=metrics.estimated_total_cost,
         )
 
     finally:
