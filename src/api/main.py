@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from src.api.routes.prediction import router as prediction_router
 from src.api.routes.system import router as system_router
 from src.api.schemas import RootResponse
 
@@ -11,6 +12,7 @@ app = FastAPI(
 )
 
 app.include_router(system_router)
+app.include_router(prediction_router)
 
 
 @app.get("/", response_model=RootResponse)
