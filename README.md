@@ -38,3 +38,4 @@ For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
 - [Model overview](docs/model.md) – Random Forest model, class weighting, training, prediction output, and persistence
 - [Simulation engine](docs/simulation.md) – prediction interface, decision logic, feedback tracking, metrics, and batch simulation
 - [Development workflow](docs/development.md) – Git workflow, commit convention, tests, and local artifacts
+- [Backend API](docs/api.md) – FastAPI backend endpoints for prediction, simulation, and metrics
