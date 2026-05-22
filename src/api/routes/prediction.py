@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 
 from src.api.config import DEFAULT_DECISION_THRESHOLD, MAX_DECISION_THRESHOLD, MIN_DECISION_THRESHOLD
+from src.api.errors import ApiError
 from src.api.schemas import PredictionResponse
 from src.common.spark import create_spark_session
 from src.simulation.predictor import FraudPredictor
@@ -28,8 +29,9 @@ def predict_sample(
     ),
 ) -> PredictionResponse:
     if not MODEL_PATH.exists():
-        raise HTTPException(
+        raise ApiError(
             status_code=503,
+            error="Model not found",
             detail=(
                 f"Model not found at {MODEL_PATH}. "
                 "Run scripts/train_model.py before using prediction endpoints."
@@ -37,8 +39,9 @@ def predict_sample(
         )
 
     if not TEST_DATA_PATH.exists():
-        raise HTTPException(
+        raise ApiError(
             status_code=503,
+            error="Test data not found",
             detail=(
                 f"Test data not found at {TEST_DATA_PATH}. "
                 "Run scripts/prepare_data.py before using prediction endpoints."
@@ -51,8 +54,9 @@ def predict_sample(
         transactions_df = spark.read.parquet(str(TEST_DATA_PATH)).limit(1)
 
         if transactions_df.count() == 0:
-            raise HTTPException(
+            raise ApiError(
                 status_code=404,
+                error="No transactions found",
                 detail="No transactions found in processed test dataset.",
             )
 

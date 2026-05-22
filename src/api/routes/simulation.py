@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
+from src.api.errors import ApiError
 
 from src.api.config import (
     DEFAULT_DECISION_THRESHOLD,
@@ -31,8 +32,9 @@ router = APIRouter(
 
 def validate_simulation_artifacts() -> None:
     if not MODEL_PATH.exists():
-        raise HTTPException(
+        raise ApiError(
             status_code=503,
+            error="Model not found",
             detail=(
                 f"Model not found at {MODEL_PATH}. "
                 "Run scripts/train_model.py before using simulation endpoints."
@@ -40,8 +42,9 @@ def validate_simulation_artifacts() -> None:
         )
 
     if not TEST_DATA_PATH.exists():
-        raise HTTPException(
+        raise ApiError(
             status_code=503,
+            error="Test data not found",
             detail=(
                 f"Test data not found at {TEST_DATA_PATH}. "
                 "Run scripts/prepare_data.py before using simulation endpoints."
@@ -78,8 +81,9 @@ def run_batch_simulation(
         transactions_df = spark.read.parquet(str(TEST_DATA_PATH)).limit(limit)
 
         if transactions_df.count() == 0:
-            raise HTTPException(
+            raise ApiError(
                 status_code=404,
+                error="No transactions found",
                 detail="No transactions found in processed test dataset.",
             )
 
@@ -143,8 +147,9 @@ def get_simulation_metrics(
         transactions_df = spark.read.parquet(str(TEST_DATA_PATH))
 
         if transactions_df.count() == 0:
-            raise HTTPException(
+            raise ApiError(
                 status_code=404,
+                error="No transactions found",
                 detail="No transactions found in processed test dataset.",
             )
 
