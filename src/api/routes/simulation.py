@@ -3,6 +3,14 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, Query
 
+from src.api.config import (
+    DEFAULT_DECISION_THRESHOLD,
+    DEFAULT_SIMULATION_BATCH_LIMIT,
+    MAX_DECISION_THRESHOLD,
+    MAX_SIMULATION_BATCH_LIMIT,
+    MIN_DECISION_THRESHOLD,
+)
+
 from src.api.schemas import BatchSimulationResponse, BusinessMetricsResponse, SimulationRecordResponse
 from src.common.spark import create_spark_session
 from src.simulation.engine import SimulationConfig, SimulationEngine
@@ -55,8 +63,12 @@ def create_simulation_engine(spark, threshold: float) -> SimulationEngine:
 
 @router.get("/batch", response_model=BatchSimulationResponse)
 def run_batch_simulation(
-    limit: int = Query(default=10, ge=1, le=100),
-    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
+    limit: int = Query(default=DEFAULT_SIMULATION_BATCH_LIMIT, ge=1, le=MAX_SIMULATION_BATCH_LIMIT),
+    threshold: float = Query(
+        default=DEFAULT_DECISION_THRESHOLD,
+        ge=MIN_DECISION_THRESHOLD,
+        le=MAX_DECISION_THRESHOLD,
+    ),
 ) -> BatchSimulationResponse:
     validate_simulation_artifacts()
 
@@ -117,7 +129,11 @@ def run_batch_simulation(
 
 @router.get("/metrics", response_model=BusinessMetricsResponse)
 def get_simulation_metrics(
-    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
+    threshold: float = Query(
+        default=DEFAULT_DECISION_THRESHOLD,
+        ge=MIN_DECISION_THRESHOLD,
+        le=MAX_DECISION_THRESHOLD,
+    ),
 ) -> BusinessMetricsResponse:
     validate_simulation_artifacts()
 

@@ -2,6 +2,8 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from src.api.config import DEFAULT_DECISION_THRESHOLD
+
 
 class RootResponse(BaseModel):
     name: str
@@ -22,7 +24,7 @@ class MetadataResponse(BaseModel):
 
 class DecisionRequest(BaseModel):
     fraud_probability: float = Field(ge=0.0, le=1.0)
-    threshold: float = Field(default=0.8, ge=0.0, le=1.0)
+    threshold: float = Field(default=DEFAULT_DECISION_THRESHOLD, ge=0.0, le=1.0)
 
 
 class DecisionResponse(BaseModel):
@@ -34,7 +36,7 @@ class DecisionResponse(BaseModel):
 class PredictionResponse(BaseModel):
     prediction: int
     fraud_probability: float
-    threshold: float = 0.8
+    threshold: float = DEFAULT_DECISION_THRESHOLD
     probability: Optional[List[float]] = None
 
 

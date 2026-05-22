@@ -3,6 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, Query
 
+from src.api.config import DEFAULT_DECISION_THRESHOLD, MAX_DECISION_THRESHOLD, MIN_DECISION_THRESHOLD
 from src.api.schemas import PredictionResponse
 from src.common.spark import create_spark_session
 from src.simulation.predictor import FraudPredictor
@@ -20,7 +21,11 @@ router = APIRouter(
 
 @router.get("/sample", response_model=PredictionResponse)
 def predict_sample(
-    threshold: float = Query(default=0.8, ge=0.0, le=1.0),
+    threshold: float = Query(
+        default=DEFAULT_DECISION_THRESHOLD,
+        ge=MIN_DECISION_THRESHOLD,
+        le=MAX_DECISION_THRESHOLD,
+    ),
 ) -> PredictionResponse:
     if not MODEL_PATH.exists():
         raise HTTPException(
