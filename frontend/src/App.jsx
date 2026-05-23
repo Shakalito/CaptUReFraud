@@ -20,6 +20,9 @@ function App() {
   const [metrics, setMetrics] = useState(null);
 
   const [batchSize, setBatchSize] = useState(DEFAULT_LIMIT);
+  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
+  const [pendingThreshold, setPendingThreshold] = useState(DEFAULT_THRESHOLD);
+
   const [isSystemLoading, setIsSystemLoading] = useState(true);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -47,7 +50,10 @@ function App() {
     loadSystemData();
   }, []);
 
-  async function loadDashboardData(customLimit = batchSize) {
+  async function loadDashboardData({
+    customLimit = batchSize,
+    customThreshold = threshold,
+  } = {}) {
     setIsDashboardLoading(true);
     setErrorMessage("");
 
@@ -57,12 +63,12 @@ function App() {
 
       const simulationResponse = await fetchBatchSimulation({
         limit: customLimit,
-        threshold: DEFAULT_THRESHOLD,
+        threshold: customThreshold,
       });
       setSimulation(simulationResponse);
 
       const metricsResponse = await fetchSimulationMetrics({
-        threshold: DEFAULT_THRESHOLD,
+        threshold: customThreshold,
       });
       setMetrics(metricsResponse);
     } catch (error) {
@@ -76,8 +82,32 @@ function App() {
     setBatchSize(Number(event.target.value));
   }
 
+  function handleThresholdChange(event) {
+    setPendingThreshold(Number(event.target.value));
+  }
+
+  function applyThreshold() {
+    setThreshold(pendingThreshold);
+    loadDashboardData({
+      customLimit: batchSize,
+      customThreshold: pendingThreshold,
+    });
+  }
+
+  function resetThreshold() {
+    setPendingThreshold(DEFAULT_THRESHOLD);
+    setThreshold(DEFAULT_THRESHOLD);
+    loadDashboardData({
+      customLimit: batchSize,
+      customThreshold: DEFAULT_THRESHOLD,
+    });
+  }
+
   function handleLoadBatch() {
-    loadDashboardData(batchSize);
+    loadDashboardData({
+      customLimit: batchSize,
+      customThreshold: threshold,
+    });
   }
 
   return (
@@ -152,12 +182,67 @@ function App() {
         </div>
 
         <div className="statusItem">
-          <span>Threshold</span>
-          <strong>{DEFAULT_THRESHOLD}</strong>
+          <span>Applied threshold</span>
+          <strong>{threshold.toFixed(2)}</strong>
         </div>
       </section>
 
-      <section className="metricsGrid">
+      <section className="thresholdPanel">
+        <div>
+          <p className="eyebrow">Threshold experiment</p>
+          <h2>Decision threshold</h2>
+          <p>
+            Lower threshold usually detects more fraud but may block more
+            legitimate transactions. Higher threshold usually reduces false
+            positives but may miss more fraud.
+          </p>
+        </div>
+
+        <div className="thresholdControls">
+          <div className="thresholdValue">
+            <span>Selected threshold</span>
+            <strong>{pendingThreshold.toFixed(2)}</strong>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={pendingThreshold}
+            onChange={handleThresholdChange}
+            disabled={isDashboardLoading}
+          />
+
+          <div className="thresholdScale">
+            <span>0.00</span>
+            <span>0.50</span>
+            <span>1.00</span>
+          </div>
+
+          <div className="thresholdButtons">
+            <button
+              className="primaryButton"
+              type="button"
+              onClick={applyThreshold}
+              disabled={isDashboardLoading}
+            >
+              Apply threshold
+            </button>
+
+            <button
+              className="secondaryButton"
+              type="button"
+              onClick={resetThreshold}
+              disabled={isDashboardLoading}
+            >
+              Reset to 0.80
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="metricsGrid six">
         <MetricCard
           label="Fraud recall"
           value={metrics ? formatPercent(metrics.fraud_recall) : "-"}
@@ -171,10 +256,16 @@ function App() {
           value={metrics?.blocked_legit_transactions ?? "-"}
         />
         <MetricCard
-          label="Estimated total cost"
-          value={
-            metrics ? formatCurrency(metrics.estimated_total_cost) : "-"
-          }
+          label="Fraud loss"
+          value={metrics ? formatCurrency(metrics.estimated_fraud_loss) : "-"}
+        />
+        <MetricCard
+          label="Blocking cost"
+          value={metrics ? formatCurrency(metrics.estimated_blocking_cost) : "-"}
+        />
+        <MetricCard
+          label="Total cost"
+          value={metrics ? formatCurrency(metrics.estimated_total_cost) : "-"}
         />
       </section>
 
@@ -193,7 +284,7 @@ function App() {
                 <dd>{formatPercent(prediction.fraud_probability)}</dd>
               </div>
               <div>
-                <dt>Threshold</dt>
+                <dt>Prediction threshold</dt>
                 <dd>{prediction.threshold}</dd>
               </div>
             </dl>
@@ -243,6 +334,54 @@ function App() {
             <span className="pill outcome-FN">FN</span>
             <span>Fraud missed by model</span>
           </div>
+        </article>
+      </section>
+
+      <section className="visualGrid">
+        <article className="card">
+          <h2>Cost Breakdown</h2>
+          {metrics ? (
+            <div className="barChart">
+              <CostBar
+                label="Fraud loss"
+                value={metrics.estimated_fraud_loss}
+                total={metrics.estimated_total_cost}
+              />
+              <CostBar
+                label="Blocking cost"
+                value={metrics.estimated_blocking_cost}
+                total={metrics.estimated_total_cost}
+              />
+            </div>
+          ) : (
+            <p>Load API data to display estimated cost breakdown.</p>
+          )}
+        </article>
+
+        <article className="card">
+          <h2>Decision Trade-off</h2>
+          {metrics ? (
+            <div className="barChart">
+              <CountBar
+                label="Missed frauds"
+                value={metrics.missed_frauds}
+                total={
+                  metrics.missed_frauds +
+                  metrics.blocked_legit_transactions
+                }
+              />
+              <CountBar
+                label="Blocked legitimate"
+                value={metrics.blocked_legit_transactions}
+                total={
+                  metrics.missed_frauds +
+                  metrics.blocked_legit_transactions
+                }
+              />
+            </div>
+          ) : (
+            <p>Load API data to display decision trade-off.</p>
+          )}
         </article>
       </section>
 
@@ -329,6 +468,38 @@ function MetricCard({ label, value }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </article>
+  );
+}
+
+function CostBar({ label, value, total }) {
+  const width = total > 0 ? Math.max((Number(value) / Number(total)) * 100, 2) : 0;
+
+  return (
+    <div className="barRow">
+      <div className="barMeta">
+        <span>{label}</span>
+        <strong>{formatCurrency(value)}</strong>
+      </div>
+      <div className="chartTrack">
+        <div className="chartFill" style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function CountBar({ label, value, total }) {
+  const width = total > 0 ? Math.max((Number(value) / Number(total)) * 100, 2) : 0;
+
+  return (
+    <div className="barRow">
+      <div className="barMeta">
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+      <div className="chartTrack">
+        <div className="chartFill warning" style={{ width: `${width}%` }} />
+      </div>
+    </div>
   );
 }
 
