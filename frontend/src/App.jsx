@@ -9,7 +9,7 @@ import {
   getApiBaseUrl,
 } from "./api/client";
 
-const DEFAULT_LIMIT = 5;
+const DEFAULT_LIMIT = 10;
 const DEFAULT_THRESHOLD = 0.8;
 
 function App() {
@@ -19,6 +19,7 @@ function App() {
   const [simulation, setSimulation] = useState(null);
   const [metrics, setMetrics] = useState(null);
 
+  const [batchSize, setBatchSize] = useState(DEFAULT_LIMIT);
   const [isSystemLoading, setIsSystemLoading] = useState(true);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -46,7 +47,7 @@ function App() {
     loadSystemData();
   }, []);
 
-  async function loadDashboardData() {
+  async function loadDashboardData(customLimit = batchSize) {
     setIsDashboardLoading(true);
     setErrorMessage("");
 
@@ -55,7 +56,7 @@ function App() {
       setPrediction(predictionResponse);
 
       const simulationResponse = await fetchBatchSimulation({
-        limit: DEFAULT_LIMIT,
+        limit: customLimit,
         threshold: DEFAULT_THRESHOLD,
       });
       setSimulation(simulationResponse);
@@ -71,25 +72,53 @@ function App() {
     }
   }
 
+  function handleBatchSizeChange(event) {
+    setBatchSize(Number(event.target.value));
+  }
+
+  function handleLoadBatch() {
+    loadDashboardData(batchSize);
+  }
+
   return (
     <main className="app">
       <section className="hero">
-        <p className="eyebrow">CaptUReFraud</p>
-        <h1>Fraud Monitoring Dashboard</h1>
-        <p className="heroText">
-          Frontend interface connected to the FastAPI backend for fraud
-          prediction, batch simulation, and business metrics.
-        </p>
-        <p className="apiUrl">API base URL: {getApiBaseUrl()}</p>
+        <div>
+          <p className="eyebrow">CaptUReFraud</p>
+          <h1>Fraud Monitoring Dashboard</h1>
+          <p className="heroText">
+            Analyst-oriented view for model prediction, transaction simulation,
+            decision outcomes, and business-level fraud monitoring.
+          </p>
+          <p className="apiUrl">API base URL: {getApiBaseUrl()}</p>
+        </div>
 
-        <button
-          className="primaryButton"
-          type="button"
-          onClick={loadDashboardData}
-          disabled={isDashboardLoading}
-        >
-          {isDashboardLoading ? "Loading API data..." : "Load API data"}
-        </button>
+        <div className="heroActions">
+          <label className="controlLabel" htmlFor="batchSize">
+            Batch size
+          </label>
+          <select
+            id="batchSize"
+            value={batchSize}
+            onChange={handleBatchSizeChange}
+            disabled={isDashboardLoading}
+          >
+            <option value={5}>5 records</option>
+            <option value={10}>10 records</option>
+            <option value={25}>25 records</option>
+            <option value={50}>50 records</option>
+            <option value={100}>100 records</option>
+          </select>
+
+          <button
+            className="primaryButton"
+            type="button"
+            onClick={handleLoadBatch}
+            disabled={isDashboardLoading}
+          >
+            {isDashboardLoading ? "Loading..." : "Load / refresh batch"}
+          </button>
+        </div>
       </section>
 
       {isSystemLoading && (
@@ -104,37 +133,52 @@ function App() {
         </section>
       )}
 
+      <section className="statusBar">
+        <div className="statusItem">
+          <span>API status</span>
+          <strong className={health?.status === "ok" ? "textSuccess" : "textMuted"}>
+            {health?.status === "ok" ? "Online" : "Unknown"}
+          </strong>
+        </div>
+
+        <div className="statusItem">
+          <span>API version</span>
+          <strong>{metadata?.api_version ?? "-"}</strong>
+        </div>
+
+        <div className="statusItem">
+          <span>Model</span>
+          <strong>{metadata?.model_type ?? "-"}</strong>
+        </div>
+
+        <div className="statusItem">
+          <span>Threshold</span>
+          <strong>{DEFAULT_THRESHOLD}</strong>
+        </div>
+      </section>
+
+      <section className="metricsGrid">
+        <MetricCard
+          label="Fraud recall"
+          value={metrics ? formatPercent(metrics.fraud_recall) : "-"}
+        />
+        <MetricCard
+          label="Missed frauds"
+          value={metrics?.missed_frauds ?? "-"}
+        />
+        <MetricCard
+          label="Blocked legitimate"
+          value={metrics?.blocked_legit_transactions ?? "-"}
+        />
+        <MetricCard
+          label="Estimated total cost"
+          value={
+            metrics ? formatCurrency(metrics.estimated_total_cost) : "-"
+          }
+        />
+      </section>
+
       <section className="grid">
-        <article className="card">
-          <h2>API Status</h2>
-          <p className={health?.status === "ok" ? "statusBadge online" : "statusBadge"}>
-            {health?.status === "ok" ? "API Online" : "Not connected"}
-          </p>
-
-          {metadata ? (
-            <dl className="details">
-              <div>
-                <dt>Project</dt>
-                <dd>{metadata.project}</dd>
-              </div>
-              <div>
-                <dt>API version</dt>
-                <dd>{metadata.api_version}</dd>
-              </div>
-              <div>
-                <dt>Model</dt>
-                <dd>{metadata.model_type}</dd>
-              </div>
-              <div>
-                <dt>Runtime</dt>
-                <dd>{metadata.runtime}</dd>
-              </div>
-            </dl>
-          ) : (
-            <p>Backend metadata will be displayed here.</p>
-          )}
-        </article>
-
         <article className="card">
           <h2>Sample Prediction</h2>
 
@@ -142,7 +186,7 @@ function App() {
             <dl className="details">
               <div>
                 <dt>Prediction</dt>
-                <dd>{prediction.prediction}</dd>
+                <dd>{formatPrediction(prediction.prediction)}</dd>
               </div>
               <div>
                 <dt>Fraud probability</dt>
@@ -154,45 +198,71 @@ function App() {
               </div>
             </dl>
           ) : (
-            <p>Click Load API data to fetch a sample prediction.</p>
+            <p>Click Load / refresh batch to fetch a sample prediction.</p>
           )}
         </article>
 
         <article className="card">
-          <h2>Business Metrics</h2>
+          <h2>Simulation Summary</h2>
 
-          {metrics ? (
+          {simulation ? (
             <dl className="details">
               <div>
-                <dt>Total transactions</dt>
-                <dd>{metrics.total_transactions}</dd>
+                <dt>Displayed records</dt>
+                <dd>{simulation.count}</dd>
               </div>
               <div>
-                <dt>Fraud recall</dt>
-                <dd>{formatPercent(metrics.fraud_recall)}</dd>
+                <dt>Requested batch size</dt>
+                <dd>{batchSize}</dd>
               </div>
               <div>
-                <dt>Missed frauds</dt>
-                <dd>{metrics.missed_frauds}</dd>
-              </div>
-              <div>
-                <dt>Total cost</dt>
-                <dd>{formatCurrency(metrics.estimated_total_cost)}</dd>
+                <dt>Decision threshold</dt>
+                <dd>{simulation.threshold}</dd>
               </div>
             </dl>
           ) : (
-            <p>Click Load API data to fetch business metrics.</p>
+            <p>Simulation summary will appear after loading API data.</p>
           )}
+        </article>
+
+        <article className="card">
+          <h2>Outcome Legend</h2>
+          <div className="legend">
+            <span className="pill outcome-TP">TP</span>
+            <span>Fraud correctly detected</span>
+          </div>
+          <div className="legend">
+            <span className="pill outcome-FP">FP</span>
+            <span>Legitimate transaction predicted as fraud</span>
+          </div>
+          <div className="legend">
+            <span className="pill outcome-TN">TN</span>
+            <span>Legitimate transaction correctly allowed</span>
+          </div>
+          <div className="legend">
+            <span className="pill outcome-FN">FN</span>
+            <span>Fraud missed by model</span>
+          </div>
         </article>
       </section>
 
       <section className="card tableCard">
         <div className="sectionHeader">
-          <h2>Batch Simulation Preview</h2>
-          <p>
-            Showing first {simulation?.count ?? DEFAULT_LIMIT} records at
-            threshold {simulation?.threshold ?? DEFAULT_THRESHOLD}.
-          </p>
+          <div>
+            <h2>Transaction Simulation Records</h2>
+            <p>
+              Simulated transaction results with model prediction, fraud
+              probability, operational decision, and prediction outcome.
+            </p>
+          </div>
+          <button
+            className="secondaryButton"
+            type="button"
+            onClick={handleLoadBatch}
+            disabled={isDashboardLoading}
+          >
+            Refresh
+          </button>
         </div>
 
         {simulation?.records?.length > 0 ? (
@@ -200,7 +270,8 @@ function App() {
             <table>
               <thead>
                 <tr>
-                  <th>Label</th>
+                  <th>#</th>
+                  <th>True label</th>
                   <th>Prediction</th>
                   <th>Fraud probability</th>
                   <th>Decision</th>
@@ -210,9 +281,25 @@ function App() {
               <tbody>
                 {simulation.records.map((record, index) => (
                   <tr key={`${record.label}-${record.prediction}-${index}`}>
-                    <td>{record.label}</td>
-                    <td>{record.prediction}</td>
-                    <td>{formatPercent(record.fraud_probability)}</td>
+                    <td>{index + 1}</td>
+                    <td>{formatLabel(record.label)}</td>
+                    <td>{formatPrediction(record.prediction)}</td>
+                    <td>
+                      <div className="probabilityCell">
+                        <span>{formatPercent(record.fraud_probability)}</span>
+                        <div className="probabilityTrack">
+                          <div
+                            className="probabilityFill"
+                            style={{
+                              width: `${Math.min(
+                                Number(record.fraud_probability) * 100,
+                                100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </td>
                     <td>
                       <span className={`pill ${record.decision}`}>
                         {record.decision}
@@ -229,10 +316,19 @@ function App() {
             </table>
           </div>
         ) : (
-          <p>Click Load API data to fetch simulation records.</p>
+          <p>Click Load / refresh batch to fetch simulation records.</p>
         )}
       </section>
     </main>
+  );
+}
+
+function MetricCard({ label, value }) {
+  return (
+    <article className="metricCard">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
   );
 }
 
@@ -253,6 +349,14 @@ function formatCurrency(value) {
     style: "currency",
     currency: "USD",
   });
+}
+
+function formatLabel(value) {
+  return Number(value) === 1 ? "Fraud" : "Legit";
+}
+
+function formatPrediction(value) {
+  return Number(value) === 1 ? "Fraud" : "Legit";
 }
 
 export default App;

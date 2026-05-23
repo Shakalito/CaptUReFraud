@@ -15,8 +15,15 @@ body {
 }
 
 .hero {
-  max-width: 900px;
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+  align-items: flex-start;
   margin-bottom: 32px;
+}
+
+.hero > div:first-child {
+  max-width: 900px;
 }
 
 .eyebrow {
@@ -35,7 +42,7 @@ h1 {
 }
 
 .heroText {
-  max-width: 720px;
+  max-width: 760px;
   margin-top: 16px;
   font-size: 18px;
   color: #4b5563;
@@ -47,15 +54,40 @@ h1 {
   font-size: 14px;
 }
 
-.primaryButton {
-  margin-top: 18px;
+.heroActions {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.controlLabel {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+select {
+  padding: 11px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #172033;
+  font-weight: 700;
+}
+
+.primaryButton,
+.secondaryButton {
   padding: 12px 18px;
   border: 0;
   border-radius: 12px;
-  background: #3b63f6;
-  color: #ffffff;
   font-weight: 700;
   cursor: pointer;
+}
+
+.primaryButton {
+  background: #3b63f6;
+  color: #ffffff;
   box-shadow: 0 10px 20px rgba(59, 99, 246, 0.22);
 }
 
@@ -63,7 +95,18 @@ h1 {
   background: #244ce0;
 }
 
-.primaryButton:disabled {
+.secondaryButton {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.secondaryButton:hover {
+  background: #e0e7ff;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+select:disabled {
   cursor: not-allowed;
   opacity: 0.65;
 }
@@ -86,6 +129,58 @@ h1 {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
+}
+
+.statusBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.statusItem,
+.metricCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.statusItem span,
+.metricCard span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statusItem strong,
+.metricCard strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.metricCard strong {
+  font-size: 24px;
+}
+
+.textSuccess {
+  color: #047857;
+}
+
+.textMuted {
+  color: #64748b;
 }
 
 .grid {
@@ -157,6 +252,16 @@ dd {
   text-align: right;
 }
 
+.legend {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin: 9px 0;
+  color: #4b5563;
+  font-size: 14px;
+}
+
 .tableCard {
   overflow: hidden;
 }
@@ -165,8 +270,12 @@ dd {
   display: flex;
   justify-content: space-between;
   gap: 24px;
-  align-items: baseline;
+  align-items: flex-start;
   margin-bottom: 16px;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 6px;
 }
 
 .sectionHeader p {
@@ -196,6 +305,10 @@ th {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+tr:hover td {
+  background: #f8fafc;
 }
 
 .pill {
@@ -238,13 +351,51 @@ th {
   color: #b91c1c;
 }
 
-@media (max-width: 1000px) {
+.probabilityCell {
+  min-width: 160px;
+}
+
+.probabilityCell span {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.probabilityTrack {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.probabilityFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #3b63f6;
+}
+
+@media (max-width: 1100px) {
+  .hero {
+    display: block;
+  }
+
+  .heroActions {
+    margin-top: 20px;
+  }
+
+  .statusBar,
+  .metricsGrid,
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .sectionHeader {
     display: block;
+  }
+
+  .sectionHeader .secondaryButton {
+    margin-top: 12px;
   }
 }
 
@@ -255,5 +406,11 @@ th {
 
   h1 {
     font-size: 34px;
+  }
+
+  .statusBar,
+  .metricsGrid,
+  .grid {
+    grid-template-columns: 1fr;
   }
 }
