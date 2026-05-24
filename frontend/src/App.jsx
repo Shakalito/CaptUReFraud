@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import {
   fetchBatchSimulation,
   fetchHealth,
   fetchMetadata,
-  fetchPredictionSample,
   fetchSimulationMetrics,
   getApiBaseUrl,
 } from "./api/client";
@@ -15,7 +14,6 @@ const DEFAULT_THRESHOLD = 0.8;
 function App() {
   const [health, setHealth] = useState(null);
   const [metadata, setMetadata] = useState(null);
-  const [prediction, setPrediction] = useState(null);
   const [simulation, setSimulation] = useState(null);
   const [metrics, setMetrics] = useState(null);
 
@@ -25,6 +23,7 @@ function App() {
 
   const [selectedTransactionIndex, setSelectedTransactionIndex] = useState(null);
   const [analystDecisions, setAnalystDecisions] = useState({});
+  const [isEvaluationRevealed, setIsEvaluationRevealed] = useState(false);
 
   const [isSystemLoading, setIsSystemLoading] = useState(true);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
@@ -39,6 +38,11 @@ function App() {
     selectedTransactionIndex !== null
       ? analystDecisions[selectedTransactionIndex]
       : null;
+
+  const analystSummary = useMemo(
+    () => calculateAnalystSummary(simulation?.records ?? [], analystDecisions),
+    [simulation, analystDecisions]
+  );
 
   useEffect(() => {
     async function loadSystemData() {
@@ -71,9 +75,6 @@ function App() {
     setErrorMessage("");
 
     try {
-      const predictionResponse = await fetchPredictionSample();
-      setPrediction(predictionResponse);
-
       const simulationResponse = await fetchBatchSimulation({
         limit: customLimit,
         threshold: customThreshold,
@@ -87,6 +88,7 @@ function App() {
 
       setSelectedTransactionIndex(null);
       setAnalystDecisions({});
+      setIsEvaluationRevealed(false);
     } catch (error) {
       setErrorMessage(error.message || "Failed to load dashboard data.");
     } finally {
@@ -141,6 +143,16 @@ function App() {
     }));
   }
 
+  function evaluateDecisions() {
+    setIsEvaluationRevealed(true);
+  }
+
+  function resetAnalystReview() {
+    setAnalystDecisions({});
+    setSelectedTransactionIndex(null);
+    setIsEvaluationRevealed(false);
+  }
+
   return (
     <main className="app">
       <section className="hero">
@@ -148,10 +160,10 @@ function App() {
           <p className="eyebrow">CaptUReFraud</p>
           <h1>Fraud Monitoring Dashboard</h1>
           <p className="heroText">
-            Analyst-oriented view for model prediction, transaction simulation,
-            decision outcomes, and business-level fraud monitoring.
+            Review simulated transactions, compare model recommendations, adjust
+            the fraud threshold, and evaluate analyst decisions after revealing
+            known outcomes.
           </p>
-          <p className="apiUrl">API base URL: {getApiBaseUrl()}</p>
         </div>
 
         <div className="heroActions">
@@ -194,28 +206,73 @@ function App() {
         </section>
       )}
 
-      <section className="statusBar">
-        <div className="statusItem">
-          <span>API status</span>
-          <strong className={health?.status === "ok" ? "textSuccess" : "textMuted"}>
-            {health?.status === "ok" ? "Online" : "Unknown"}
-          </strong>
-        </div>
+      <section className="topInfoGrid">
+        <section className="workflowSteps">
+          <div className="workflowStep">
+            <span>1</span>
+            <div>
+              <strong>Load transactions</strong>
+              <p>Fetch a simulated batch from the backend.</p>
+            </div>
+          </div>
 
-        <div className="statusItem">
-          <span>API version</span>
-          <strong>{metadata?.api_version ?? "-"}</strong>
-        </div>
+          <div className="workflowStep">
+            <span>2</span>
+            <div>
+              <strong>Review decisions</strong>
+              <p>Select transactions and mark allow or block.</p>
+            </div>
+          </div>
 
-        <div className="statusItem">
-          <span>Model</span>
-          <strong>{metadata?.model_type ?? "-"}</strong>
-        </div>
+          <div className="workflowStep">
+            <span>3</span>
+            <div>
+              <strong>Evaluate results</strong>
+              <p>Reveal known labels and measure analyst performance.</p>
+            </div>
+          </div>
+        </section>
 
-        <div className="statusItem">
-          <span>Applied threshold</span>
-          <strong>{threshold.toFixed(2)}</strong>
-        </div>
+        <section className="compactStatusBar">
+          <div className="compactStatusMain">
+            <span
+              className={
+                health?.status === "ok"
+                  ? "statusDot online"
+                  : "statusDot offline"
+              }
+            />
+            <strong>
+              {health?.status === "ok"
+                ? "System online"
+                : "System status unknown"}
+            </strong>
+            <span>Threshold {threshold.toFixed(2)}</span>
+            <span>Batch size {batchSize}</span>
+          </div>
+
+          <details className="technicalDetails">
+            <summary>Technical details</summary>
+            <dl>
+              <div>
+                <dt>API base URL</dt>
+                <dd>{getApiBaseUrl()}</dd>
+              </div>
+              <div>
+                <dt>API version</dt>
+                <dd>{metadata?.api_version ?? "-"}</dd>
+              </div>
+              <div>
+                <dt>Model</dt>
+                <dd>{metadata?.model_type ?? "-"}</dd>
+              </div>
+              <div>
+                <dt>Runtime</dt>
+                <dd>{metadata?.runtime ?? "-"}</dd>
+              </div>
+            </dl>
+          </details>
+        </section>
       </section>
 
       <section className="thresholdPanel">
@@ -300,73 +357,31 @@ function App() {
         />
       </section>
 
-      <section className="grid">
-        <article className="card">
-          <h2>Sample Prediction</h2>
-
-          {prediction ? (
-            <dl className="details">
-              <div>
-                <dt>Prediction</dt>
-                <dd>{formatPrediction(prediction.prediction)}</dd>
-              </div>
-              <div>
-                <dt>Fraud probability</dt>
-                <dd>{formatPercent(prediction.fraud_probability)}</dd>
-              </div>
-              <div>
-                <dt>Prediction threshold</dt>
-                <dd>{prediction.threshold}</dd>
-              </div>
-            </dl>
-          ) : (
-            <p>Click Load / refresh batch to fetch a sample prediction.</p>
-          )}
-        </article>
-
-        <article className="card">
-          <h2>Simulation Summary</h2>
-
-          {simulation ? (
-            <dl className="details">
-              <div>
-                <dt>Displayed records</dt>
-                <dd>{simulation.count}</dd>
-              </div>
-              <div>
-                <dt>Requested batch size</dt>
-                <dd>{batchSize}</dd>
-              </div>
-              <div>
-                <dt>Decision threshold</dt>
-                <dd>{simulation.threshold}</dd>
-              </div>
-            </dl>
-          ) : (
-            <p>Simulation summary will appear after loading API data.</p>
-          )}
-        </article>
-
-        <article className="card">
-          <h2>Outcome Legend</h2>
-          <div className="legend">
-            <span className="pill outcome-TP">TP</span>
-            <span>Fraud correctly detected</span>
-          </div>
-          <div className="legend">
-            <span className="pill outcome-FP">FP</span>
-            <span>Legitimate transaction predicted as fraud</span>
-          </div>
-          <div className="legend">
-            <span className="pill outcome-TN">TN</span>
-            <span>Legitimate transaction correctly allowed</span>
-          </div>
-          <div className="legend">
-            <span className="pill outcome-FN">FN</span>
-            <span>Fraud missed by model</span>
-          </div>
-        </article>
-      </section>
+      {isEvaluationRevealed && (
+        <section className="metricsGrid six">
+          <MetricCard
+            label="Reviewed"
+            value={analystSummary.reviewedTransactions}
+          />
+          <MetricCard label="Correct" value={analystSummary.correctDecisions} />
+          <MetricCard
+            label="Incorrect"
+            value={analystSummary.incorrectDecisions}
+          />
+          <MetricCard
+            label="Analyst accuracy"
+            value={formatPercent(analystSummary.accuracy)}
+          />
+          <MetricCard
+            label="Frauds missed"
+            value={analystSummary.fraudsMissedByAnalyst}
+          />
+          <MetricCard
+            label="Legit blocked"
+            value={analystSummary.legitBlockedByAnalyst}
+          />
+        </section>
+      )}
 
       <section className="visualGrid">
         <article className="card">
@@ -397,16 +412,14 @@ function App() {
                 label="Missed frauds"
                 value={metrics.missed_frauds}
                 total={
-                  metrics.missed_frauds +
-                  metrics.blocked_legit_transactions
+                  metrics.missed_frauds + metrics.blocked_legit_transactions
                 }
               />
               <CountBar
                 label="Blocked legitimate"
                 value={metrics.blocked_legit_transactions}
                 total={
-                  metrics.missed_frauds +
-                  metrics.blocked_legit_transactions
+                  metrics.missed_frauds + metrics.blocked_legit_transactions
                 }
               />
             </div>
@@ -416,14 +429,46 @@ function App() {
         </article>
       </section>
 
+      <section className="reviewPanel">
+        <div>
+          <p className="eyebrow">Analyst simulation</p>
+          <h2>Review transactions before revealing labels</h2>
+          <p>
+            Select transactions from the table, make allow/block decisions, and
+            reveal known labels only when you are ready to evaluate analyst
+            performance.
+          </p>
+        </div>
+
+        <div className="reviewActions">
+          <button
+            className="primaryButton"
+            type="button"
+            onClick={evaluateDecisions}
+            disabled={analystSummary.reviewedTransactions === 0}
+          >
+            Evaluate decisions
+          </button>
+
+          <button
+            className="secondaryButton"
+            type="button"
+            onClick={resetAnalystReview}
+            disabled={analystSummary.reviewedTransactions === 0}
+          >
+            Reset review
+          </button>
+        </div>
+      </section>
+
       <section className="workflowGrid">
         <section className="card tableCard">
           <div className="sectionHeader">
             <div>
               <h2>Transaction Simulation Records</h2>
               <p>
-                Select a transaction to review model output and make an analyst
-                decision.
+                Select a transaction, review model output, and choose an analyst
+                decision before revealing known labels.
               </p>
             </div>
             <button
@@ -448,57 +493,92 @@ function App() {
                     <th>System decision</th>
                     <th>Outcome</th>
                     <th>Analyst decision</th>
+                    <th>Result</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {simulation.records.map((record, index) => (
-                    <tr
-                      key={`${record.label}-${record.prediction}-${index}`}
-                      className={
-                        selectedTransactionIndex === index ? "selectedRow" : ""
-                      }
-                      onClick={() => selectTransaction(index)}
-                    >
-                      <td>{index + 1}</td>
-                      <td>{formatLabel(record.label)}</td>
-                      <td>{formatPrediction(record.prediction)}</td>
-                      <td>
-                        <div className="probabilityCell">
-                          <span>{formatPercent(record.fraud_probability)}</span>
-                          <div className="probabilityTrack">
-                            <div
-                              className="probabilityFill"
-                              style={{
-                                width: `${Math.min(
-                                  Number(record.fraud_probability) * 100,
-                                  100
-                                )}%`,
-                              }}
-                            />
+                  {simulation.records.map((record, index) => {
+                    const analystDecision = analystDecisions[index];
+                    const evaluation = analystDecision
+                      ? getAnalystEvaluation(record, analystDecision)
+                      : null;
+
+                    return (
+                      <tr
+                        key={`${record.label}-${record.prediction}-${index}`}
+                        className={
+                          selectedTransactionIndex === index ? "selectedRow" : ""
+                        }
+                        onClick={() => selectTransaction(index)}
+                      >
+                        <td>{index + 1}</td>
+                        <td>
+                          {isEvaluationRevealed ? (
+                            formatLabel(record.label)
+                          ) : (
+                            <span className="hiddenValue">Hidden</span>
+                          )}
+                        </td>
+                        <td>{formatPrediction(record.prediction)}</td>
+                        <td>
+                          <div className="probabilityCell">
+                            <span>{formatPercent(record.fraud_probability)}</span>
+                            <div className="probabilityTrack">
+                              <div
+                                className="probabilityFill"
+                                style={{
+                                  width: `${Math.min(
+                                    Number(record.fraud_probability) * 100,
+                                    100
+                                  )}%`,
+                                }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`pill ${record.decision}`}>
-                          {record.decision}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`pill outcome-${record.prediction_outcome}`}>
-                          {record.prediction_outcome}
-                        </span>
-                      </td>
-                      <td>
-                        {analystDecisions[index] ? (
-                          <span className={`pill ${analystDecisions[index]}`}>
-                            {analystDecisions[index]}
+                        </td>
+                        <td>
+                          <span className={`pill ${record.decision}`}>
+                            {record.decision}
                           </span>
-                        ) : (
-                          <span className="mutedText">Not reviewed</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td>
+                          {isEvaluationRevealed ? (
+                            <span
+                              className={`pill outcome-${record.prediction_outcome}`}
+                            >
+                              {record.prediction_outcome}
+                            </span>
+                          ) : (
+                            <span className="hiddenValue">Hidden</span>
+                          )}
+                        </td>
+                        <td>
+                          {analystDecision ? (
+                            <span className={`pill ${analystDecision}`}>
+                              {analystDecision}
+                            </span>
+                          ) : (
+                            <span className="mutedText">Not reviewed</span>
+                          )}
+                        </td>
+                        <td>
+                          {isEvaluationRevealed && evaluation ? (
+                            <span
+                              className={
+                                evaluation.isCorrect
+                                  ? "resultBadge success"
+                                  : "resultBadge danger"
+                              }
+                            >
+                              {evaluation.isCorrect ? "Correct" : "Incorrect"}
+                            </span>
+                          ) : (
+                            <span className="mutedText">Pending</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -513,8 +593,8 @@ function App() {
           {selectedTransaction ? (
             <>
               <p className="panelIntro">
-                Review selected transaction and confirm the analyst-facing
-                decision. This is stored only in frontend state.
+                Review the model recommendation and choose an analyst decision.
+                The known label is hidden until evaluation.
               </p>
 
               <dl className="details">
@@ -524,7 +604,13 @@ function App() {
                 </div>
                 <div>
                   <dt>True label</dt>
-                  <dd>{formatLabel(selectedTransaction.label)}</dd>
+                  <dd>
+                    {isEvaluationRevealed ? (
+                      formatLabel(selectedTransaction.label)
+                    ) : (
+                      <span className="hiddenValue">Hidden</span>
+                    )}
+                  </dd>
                 </div>
                 <div>
                   <dt>Model prediction</dt>
@@ -545,11 +631,15 @@ function App() {
                 <div>
                   <dt>Prediction outcome</dt>
                   <dd>
-                    <span
-                      className={`pill outcome-${selectedTransaction.prediction_outcome}`}
-                    >
-                      {selectedTransaction.prediction_outcome}
-                    </span>
+                    {isEvaluationRevealed ? (
+                      <span
+                        className={`pill outcome-${selectedTransaction.prediction_outcome}`}
+                      >
+                        {selectedTransaction.prediction_outcome}
+                      </span>
+                    ) : (
+                      <span className="hiddenValue">Hidden</span>
+                    )}
                   </dd>
                 </div>
               </dl>
@@ -572,14 +662,21 @@ function App() {
               </div>
 
               {selectedAnalystDecision ? (
+                <p>
+                  Analyst decision:{" "}
+                  <span className={`pill ${selectedAnalystDecision}`}>
+                    {selectedAnalystDecision}
+                  </span>
+                </p>
+              ) : (
+                <p className="mutedText">No analyst decision selected yet.</p>
+              )}
+
+              {isEvaluationRevealed && selectedAnalystDecision && (
                 <AnalystDecisionFeedback
                   transaction={selectedTransaction}
                   decision={selectedAnalystDecision}
                 />
-              ) : (
-                <p className="mutedText">
-                  No analyst decision selected yet.
-                </p>
               )}
             </>
           ) : (
@@ -595,17 +692,22 @@ function App() {
 }
 
 function AnalystDecisionFeedback({ transaction, decision }) {
-  const expectedDecision = getExpectedDecision(transaction.label);
-  const isCorrect = decision === expectedDecision;
+  const evaluation = getAnalystEvaluation(transaction, decision);
 
   return (
-    <div className={isCorrect ? "feedbackBox success" : "feedbackBox danger"}>
+    <div
+      className={
+        evaluation.isCorrect ? "feedbackBox success" : "feedbackBox danger"
+      }
+    >
       <strong>
-        {isCorrect ? "Decision aligns with label" : "Decision conflicts with label"}
+        {evaluation.isCorrect
+          ? "Decision aligns with known label"
+          : "Decision conflicts with known label"}
       </strong>
       <p>
         Analyst selected <strong>{decision}</strong>. Based on the known label,
-        expected decision is <strong>{expectedDecision}</strong>.
+        expected decision is <strong>{evaluation.expectedDecision}</strong>.
       </p>
     </div>
   );
@@ -621,7 +723,8 @@ function MetricCard({ label, value }) {
 }
 
 function CostBar({ label, value, total }) {
-  const width = total > 0 ? Math.max((Number(value) / Number(total)) * 100, 2) : 0;
+  const width =
+    total > 0 ? Math.max((Number(value) / Number(total)) * 100, 2) : 0;
 
   return (
     <div className="barRow">
@@ -637,7 +740,8 @@ function CostBar({ label, value, total }) {
 }
 
 function CountBar({ label, value, total }) {
-  const width = total > 0 ? Math.max((Number(value) / Number(total)) * 100, 2) : 0;
+  const width =
+    total > 0 ? Math.max((Number(value) / Number(total)) * 100, 2) : 0;
 
   return (
     <div className="barRow">
@@ -650,6 +754,58 @@ function CountBar({ label, value, total }) {
       </div>
     </div>
   );
+}
+
+function calculateAnalystSummary(records, decisions) {
+  const reviewedEntries = Object.entries(decisions).filter(
+    ([index]) => records[Number(index)]
+  );
+
+  let correctDecisions = 0;
+  let incorrectDecisions = 0;
+  let fraudsMissedByAnalyst = 0;
+  let legitBlockedByAnalyst = 0;
+
+  reviewedEntries.forEach(([index, decision]) => {
+    const record = records[Number(index)];
+    const evaluation = getAnalystEvaluation(record, decision);
+
+    if (evaluation.isCorrect) {
+      correctDecisions += 1;
+    } else {
+      incorrectDecisions += 1;
+    }
+
+    if (Number(record.label) === 1 && decision === "allow") {
+      fraudsMissedByAnalyst += 1;
+    }
+
+    if (Number(record.label) === 0 && decision === "block") {
+      legitBlockedByAnalyst += 1;
+    }
+  });
+
+  const reviewedTransactions = reviewedEntries.length;
+  const accuracy =
+    reviewedTransactions > 0 ? correctDecisions / reviewedTransactions : 0;
+
+  return {
+    reviewedTransactions,
+    correctDecisions,
+    incorrectDecisions,
+    accuracy,
+    fraudsMissedByAnalyst,
+    legitBlockedByAnalyst,
+  };
+}
+
+function getAnalystEvaluation(transaction, decision) {
+  const expectedDecision = getExpectedDecision(transaction.label);
+
+  return {
+    expectedDecision,
+    isCorrect: decision === expectedDecision,
+  };
 }
 
 function formatPercent(value) {
