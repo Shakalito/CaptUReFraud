@@ -37,5 +37,6 @@ For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
 - [ML dataset](docs/ml_dataset.md) – structure of the final Spark ML dataset with `features` and `label`
 - [Model overview](docs/model.md) – Random Forest model, class weighting, training, prediction output, and persistence
 - [Simulation engine](docs/simulation.md) – prediction interface, decision logic, feedback tracking, metrics, and batch simulation
-- [Development workflow](docs/development.md) – Git workflow, commit convention, tests, and local artifacts
 - [Backend API](docs/api.md) – FastAPI backend endpoints for prediction, simulation, and metrics
+- [Frontend UI](docs/frontend.md) – React dashboard for fraud monitoring, threshold experimentation, and analyst decision simulation
+- [Development workflow](docs/development.md) – Git workflow, commit convention, tests, and local artifacts
