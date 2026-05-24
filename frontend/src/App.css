@@ -390,6 +390,13 @@ dd {
   background: #f97316;
 }
 
+.workflowGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
+  gap: 20px;
+  align-items: flex-start;
+}
+
 .tableCard {
   overflow: hidden;
 }
@@ -415,6 +422,10 @@ dd {
   overflow-x: auto;
 }
 
+.tableWrapper tr {
+  cursor: pointer;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -437,6 +448,14 @@ th {
 
 tr:hover td {
   background: #f8fafc;
+}
+
+.selectedRow td {
+  background: #eef2ff;
+}
+
+.selectedRow:hover td {
+  background: #e0e7ff;
 }
 
 .pill {
@@ -503,14 +522,88 @@ tr:hover td {
   background: #3b63f6;
 }
 
+.mutedText {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.analystPanel {
+  position: sticky;
+  top: 24px;
+}
+
+.panelIntro {
+  margin-top: 0;
+}
+
+.analystActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.decisionButton {
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.allowButton {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.allowButton:hover {
+  background: #d1fae5;
+}
+
+.blockButton {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.blockButton:hover {
+  background: #fee2e2;
+}
+
+.feedbackBox {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.feedbackBox p {
+  margin-bottom: 0;
+}
+
+.feedbackBox.success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.feedbackBox.danger {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
 @media (max-width: 1200px) {
   .metricsGrid.six {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .thresholdPanel,
-  .visualGrid {
+  .visualGrid,
+  .workflowGrid {
     grid-template-columns: 1fr;
+  }
+
+  .analystPanel {
+    position: static;
   }
 }
 
@@ -554,7 +647,12 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 
-  .thresholdButtons {
+  .thresholdButtons,
+  .analystActions {
     flex-direction: column;
+  }
+
+  .analystActions {
+    grid-template-columns: 1fr;
   }
 }

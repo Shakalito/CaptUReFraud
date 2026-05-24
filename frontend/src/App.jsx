@@ -23,9 +23,22 @@ function App() {
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
   const [pendingThreshold, setPendingThreshold] = useState(DEFAULT_THRESHOLD);
 
+  const [selectedTransactionIndex, setSelectedTransactionIndex] = useState(null);
+  const [analystDecisions, setAnalystDecisions] = useState({});
+
   const [isSystemLoading, setIsSystemLoading] = useState(true);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const selectedTransaction =
+    selectedTransactionIndex !== null
+      ? simulation?.records?.[selectedTransactionIndex]
+      : null;
+
+  const selectedAnalystDecision =
+    selectedTransactionIndex !== null
+      ? analystDecisions[selectedTransactionIndex]
+      : null;
 
   useEffect(() => {
     async function loadSystemData() {
@@ -71,6 +84,9 @@ function App() {
         threshold: customThreshold,
       });
       setMetrics(metricsResponse);
+
+      setSelectedTransactionIndex(null);
+      setAnalystDecisions({});
     } catch (error) {
       setErrorMessage(error.message || "Failed to load dashboard data.");
     } finally {
@@ -108,6 +124,21 @@ function App() {
       customLimit: batchSize,
       customThreshold: threshold,
     });
+  }
+
+  function selectTransaction(index) {
+    setSelectedTransactionIndex(index);
+  }
+
+  function setAnalystDecision(decision) {
+    if (selectedTransactionIndex === null) {
+      return;
+    }
+
+    setAnalystDecisions((currentDecisions) => ({
+      ...currentDecisions,
+      [selectedTransactionIndex]: decision,
+    }));
   }
 
   return (
@@ -385,80 +416,198 @@ function App() {
         </article>
       </section>
 
-      <section className="card tableCard">
-        <div className="sectionHeader">
-          <div>
-            <h2>Transaction Simulation Records</h2>
-            <p>
-              Simulated transaction results with model prediction, fraud
-              probability, operational decision, and prediction outcome.
-            </p>
+      <section className="workflowGrid">
+        <section className="card tableCard">
+          <div className="sectionHeader">
+            <div>
+              <h2>Transaction Simulation Records</h2>
+              <p>
+                Select a transaction to review model output and make an analyst
+                decision.
+              </p>
+            </div>
+            <button
+              className="secondaryButton"
+              type="button"
+              onClick={handleLoadBatch}
+              disabled={isDashboardLoading}
+            >
+              Refresh
+            </button>
           </div>
-          <button
-            className="secondaryButton"
-            type="button"
-            onClick={handleLoadBatch}
-            disabled={isDashboardLoading}
-          >
-            Refresh
-          </button>
-        </div>
 
-        {simulation?.records?.length > 0 ? (
-          <div className="tableWrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>True label</th>
-                  <th>Prediction</th>
-                  <th>Fraud probability</th>
-                  <th>Decision</th>
-                  <th>Outcome</th>
-                </tr>
-              </thead>
-              <tbody>
-                {simulation.records.map((record, index) => (
-                  <tr key={`${record.label}-${record.prediction}-${index}`}>
-                    <td>{index + 1}</td>
-                    <td>{formatLabel(record.label)}</td>
-                    <td>{formatPrediction(record.prediction)}</td>
-                    <td>
-                      <div className="probabilityCell">
-                        <span>{formatPercent(record.fraud_probability)}</span>
-                        <div className="probabilityTrack">
-                          <div
-                            className="probabilityFill"
-                            style={{
-                              width: `${Math.min(
-                                Number(record.fraud_probability) * 100,
-                                100
-                              )}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`pill ${record.decision}`}>
-                        {record.decision}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`pill outcome-${record.prediction_outcome}`}>
-                        {record.prediction_outcome}
-                      </span>
-                    </td>
+          {simulation?.records?.length > 0 ? (
+            <div className="tableWrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>True label</th>
+                    <th>Prediction</th>
+                    <th>Fraud probability</th>
+                    <th>System decision</th>
+                    <th>Outcome</th>
+                    <th>Analyst decision</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p>Click Load / refresh batch to fetch simulation records.</p>
-        )}
+                </thead>
+                <tbody>
+                  {simulation.records.map((record, index) => (
+                    <tr
+                      key={`${record.label}-${record.prediction}-${index}`}
+                      className={
+                        selectedTransactionIndex === index ? "selectedRow" : ""
+                      }
+                      onClick={() => selectTransaction(index)}
+                    >
+                      <td>{index + 1}</td>
+                      <td>{formatLabel(record.label)}</td>
+                      <td>{formatPrediction(record.prediction)}</td>
+                      <td>
+                        <div className="probabilityCell">
+                          <span>{formatPercent(record.fraud_probability)}</span>
+                          <div className="probabilityTrack">
+                            <div
+                              className="probabilityFill"
+                              style={{
+                                width: `${Math.min(
+                                  Number(record.fraud_probability) * 100,
+                                  100
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`pill ${record.decision}`}>
+                          {record.decision}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`pill outcome-${record.prediction_outcome}`}>
+                          {record.prediction_outcome}
+                        </span>
+                      </td>
+                      <td>
+                        {analystDecisions[index] ? (
+                          <span className={`pill ${analystDecisions[index]}`}>
+                            {analystDecisions[index]}
+                          </span>
+                        ) : (
+                          <span className="mutedText">Not reviewed</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>Click Load / refresh batch to fetch simulation records.</p>
+          )}
+        </section>
+
+        <aside className="card analystPanel">
+          <h2>Analyst Review</h2>
+
+          {selectedTransaction ? (
+            <>
+              <p className="panelIntro">
+                Review selected transaction and confirm the analyst-facing
+                decision. This is stored only in frontend state.
+              </p>
+
+              <dl className="details">
+                <div>
+                  <dt>Selected row</dt>
+                  <dd>{selectedTransactionIndex + 1}</dd>
+                </div>
+                <div>
+                  <dt>True label</dt>
+                  <dd>{formatLabel(selectedTransaction.label)}</dd>
+                </div>
+                <div>
+                  <dt>Model prediction</dt>
+                  <dd>{formatPrediction(selectedTransaction.prediction)}</dd>
+                </div>
+                <div>
+                  <dt>Fraud probability</dt>
+                  <dd>{formatPercent(selectedTransaction.fraud_probability)}</dd>
+                </div>
+                <div>
+                  <dt>System decision</dt>
+                  <dd>
+                    <span className={`pill ${selectedTransaction.decision}`}>
+                      {selectedTransaction.decision}
+                    </span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Prediction outcome</dt>
+                  <dd>
+                    <span
+                      className={`pill outcome-${selectedTransaction.prediction_outcome}`}
+                    >
+                      {selectedTransaction.prediction_outcome}
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="analystActions">
+                <button
+                  type="button"
+                  className="decisionButton allowButton"
+                  onClick={() => setAnalystDecision("allow")}
+                >
+                  Mark allow
+                </button>
+                <button
+                  type="button"
+                  className="decisionButton blockButton"
+                  onClick={() => setAnalystDecision("block")}
+                >
+                  Mark block
+                </button>
+              </div>
+
+              {selectedAnalystDecision ? (
+                <AnalystDecisionFeedback
+                  transaction={selectedTransaction}
+                  decision={selectedAnalystDecision}
+                />
+              ) : (
+                <p className="mutedText">
+                  No analyst decision selected yet.
+                </p>
+              )}
+            </>
+          ) : (
+            <p>
+              Select a transaction from the table to review model output and
+              choose an analyst decision.
+            </p>
+          )}
+        </aside>
       </section>
     </main>
+  );
+}
+
+function AnalystDecisionFeedback({ transaction, decision }) {
+  const expectedDecision = getExpectedDecision(transaction.label);
+  const isCorrect = decision === expectedDecision;
+
+  return (
+    <div className={isCorrect ? "feedbackBox success" : "feedbackBox danger"}>
+      <strong>
+        {isCorrect ? "Decision aligns with label" : "Decision conflicts with label"}
+      </strong>
+      <p>
+        Analyst selected <strong>{decision}</strong>. Based on the known label,
+        expected decision is <strong>{expectedDecision}</strong>.
+      </p>
+    </div>
   );
 }
 
@@ -528,6 +677,10 @@ function formatLabel(value) {
 
 function formatPrediction(value) {
   return Number(value) === 1 ? "Fraud" : "Legit";
+}
+
+function getExpectedDecision(label) {
+  return Number(label) === 1 ? "block" : "allow";
 }
 
 export default App;
