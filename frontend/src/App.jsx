@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import {
   fetchBatchSimulation,
+  fetchEvaluationMetrics,
   fetchHealth,
   fetchMetadata,
   fetchSimulationMetrics,
@@ -16,6 +17,7 @@ function App() {
   const [metadata, setMetadata] = useState(null);
   const [simulation, setSimulation] = useState(null);
   const [metrics, setMetrics] = useState(null);
+  const [evaluationMetrics, setEvaluationMetrics] = useState(null);
 
   const [batchSize, setBatchSize] = useState(DEFAULT_LIMIT);
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
@@ -85,6 +87,11 @@ function App() {
         threshold: customThreshold,
       });
       setMetrics(metricsResponse);
+
+      const evaluationResponse = await fetchEvaluationMetrics({
+        threshold: customThreshold,
+      });
+      setEvaluationMetrics(evaluationResponse);
 
       setSelectedTransactionIndex(null);
       setAnalystDecisions({});
@@ -355,6 +362,115 @@ function App() {
           label="Total cost"
           value={metrics ? formatCurrency(metrics.estimated_total_cost) : "-"}
         />
+      </section>
+
+      <section className="evaluationSection">
+        <div className="sectionHeader">
+          <div>
+            <p className="eyebrow">Evaluation</p>
+            <h2>Model decision quality</h2>
+            <p>
+              Evaluation metrics show how threshold-based system decisions perform
+              against known labels. This section explains false positives, false
+              negatives, and the precision-recall trade-off.
+            </p>
+          </div>
+        </div>
+
+        {evaluationMetrics ? (
+          <>
+            <section className="metricsGrid five">
+              <MetricCard
+                label="Precision"
+                value={formatPercent(evaluationMetrics.precision)}
+              />
+              <MetricCard
+                label="Recall"
+                value={formatPercent(evaluationMetrics.recall)}
+              />
+              <MetricCard
+                label="F1 score"
+                value={formatPercent(evaluationMetrics.f1_score)}
+              />
+              <MetricCard
+                label="False positive rate"
+                value={formatPercent(evaluationMetrics.false_positive_rate)}
+              />
+              <MetricCard
+                label="False negative rate"
+                value={formatPercent(evaluationMetrics.false_negative_rate)}
+              />
+            </section>
+
+            <section className="evaluationGrid">
+              <article className="card">
+                <h2>Confusion Matrix</h2>
+                <div className="confusionMatrix">
+                  <div className="confusionCell success">
+                    <span>True Positive</span>
+                    <strong>{evaluationMetrics.true_positives}</strong>
+                    <p>Fraud correctly blocked</p>
+                  </div>
+
+                  <div className="confusionCell warning">
+                    <span>False Positive</span>
+                    <strong>{evaluationMetrics.false_positives}</strong>
+                    <p>Legitimate transaction incorrectly blocked</p>
+                  </div>
+
+                  <div className="confusionCell neutral">
+                    <span>True Negative</span>
+                    <strong>{evaluationMetrics.true_negatives}</strong>
+                    <p>Legitimate transaction correctly allowed</p>
+                  </div>
+
+                  <div className="confusionCell danger">
+                    <span>False Negative</span>
+                    <strong>{evaluationMetrics.false_negatives}</strong>
+                    <p>Fraud transaction missed</p>
+                  </div>
+                </div>
+              </article>
+
+              <article className="card">
+                <h2>Error Interpretation</h2>
+                <div className="barChart">
+                  <CountBar
+                    label="False positives"
+                    value={evaluationMetrics.false_positives}
+                    total={
+                      evaluationMetrics.false_positives +
+                      evaluationMetrics.false_negatives
+                    }
+                  />
+                  <CountBar
+                    label="False negatives"
+                    value={evaluationMetrics.false_negatives}
+                    total={
+                      evaluationMetrics.false_positives +
+                      evaluationMetrics.false_negatives
+                    }
+                  />
+                </div>
+
+                <div className="interpretationList">
+                  <p>
+                    <strong>False positive:</strong> a legitimate transaction is
+                    blocked or flagged as fraud.
+                  </p>
+                  <p>
+                    <strong>False negative:</strong> a fraud transaction is allowed
+                    and missed by the system.
+                  </p>
+                </div>
+              </article>
+            </section>
+          </>
+        ) : (
+          <article className="card">
+            <p>Load a simulation batch to display evaluation metrics.</p>
+          </article>
+        )}
       </section>
 
       {isEvaluationRevealed && (

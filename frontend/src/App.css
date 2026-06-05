@@ -798,3 +798,106 @@ dd {
     grid-template-columns: 1fr;
   }
 }
+
+.evaluationSection {
+  margin-bottom: 20px;
+}
+
+.metricsGrid.five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.evaluationGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.confusionMatrix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.confusionCell {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.confusionCell span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.confusionCell strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+  color: #172033;
+}
+
+.confusionCell p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.confusionCell.success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.confusionCell.warning {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.confusionCell.neutral {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.confusionCell.danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.interpretationList {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.interpretationList p {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #334155;
+  line-height: 1.5;
+}
+
+@media (max-width: 1200px) {
+  .metricsGrid.five {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .evaluationGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .metricsGrid.five,
+  .confusionMatrix {
+    grid-template-columns: 1fr;
+  }
+}
