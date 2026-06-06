@@ -24,7 +24,34 @@ For dataset setup instructions, see: [`docs/data_setup.md`](docs/data_setup.md).
 
 The project is intended to run inside Docker.
 
-For Docker setup and runtime commands, see: [`docs/docker.md`](docs/docker.md).
+First build contariners:
+```bash
+docker compose build
+```
+
+After that you can turn on backend + frontend:
+```bash
+docker compose up -d
+```
+
+In web broswer visit [localhost:5173](http://localhost:5173) to start using application with frontend.
+
+Start only container with Jupyter:
+```bash
+docker compose --profile jupyter up -d jupyter
+```
+
+Start backend, frontend and Jupyter container:
+```bash
+docker compose --profile jupyter up -d
+```
+
+Stop all containers:
+```bash
+docker compose stop
+```
+
+For more informations about Docker setup and runtime commands, see: [`docs/docker.md`](docs/docker.md).
 
 For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
 

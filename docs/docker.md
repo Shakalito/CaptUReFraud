@@ -25,7 +25,7 @@ docker compose build --no-cache
 ### Start the application container
 
 ```bash
-docker compose up -d app
+docker compose up -d
 ```
 
 This starts the main development container without Jupyter Lab.
