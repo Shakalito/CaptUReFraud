@@ -60,3 +60,11 @@ export function fetchSimulationMetrics({ threshold = 0.8 } = {}) {
 
   return requestJson(`/simulation/metrics?${params.toString()}`);
 }
+
+export function fetchEvaluationMetrics({ threshold = 0.8 } = {}) {
+  const params = new URLSearchParams({
+    threshold: String(threshold),
+  });
+
+  return requestJson(`/evaluation/model?${params.toString()}`);
+}

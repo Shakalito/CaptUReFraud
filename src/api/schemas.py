@@ -69,6 +69,19 @@ class BusinessMetricsResponse(BaseModel):
     estimated_blocking_cost: float
     estimated_total_cost: float
 
+class EvaluationMetricsResponse(BaseModel):
+    threshold: float
+    true_positives: int
+    false_positives: int
+    true_negatives: int
+    false_negatives: int
+    total: int
+    accuracy: float
+    precision: float
+    recall: float
+    f1_score: float
+    false_positive_rate: float
+    false_negative_rate: float
 
 class ErrorResponse(BaseModel):
     error: str

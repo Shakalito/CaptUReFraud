@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import {
   fetchBatchSimulation,
+  fetchEvaluationMetrics,
   fetchHealth,
   fetchMetadata,
   fetchSimulationMetrics,
@@ -16,6 +17,7 @@ function App() {
   const [metadata, setMetadata] = useState(null);
   const [simulation, setSimulation] = useState(null);
   const [metrics, setMetrics] = useState(null);
+  const [evaluationMetrics, setEvaluationMetrics] = useState(null);
 
   const [batchSize, setBatchSize] = useState(DEFAULT_LIMIT);
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
@@ -85,6 +87,11 @@ function App() {
         threshold: customThreshold,
       });
       setMetrics(metricsResponse);
+
+      const evaluationResponse = await fetchEvaluationMetrics({
+        threshold: customThreshold,
+      });
+      setEvaluationMetrics(evaluationResponse);
 
       setSelectedTransactionIndex(null);
       setAnalystDecisions({});
@@ -357,8 +364,117 @@ function App() {
         />
       </section>
 
+      <section className="evaluationSection">
+        <div className="sectionHeader">
+          <div>
+            <p className="eyebrow">Evaluation</p>
+            <h2>Model decision quality</h2>
+            <p>
+              Evaluation metrics show how threshold-based system decisions perform
+              against known labels. This section explains false positives, false
+              negatives, and the precision-recall trade-off.
+            </p>
+          </div>
+        </div>
+
+        {evaluationMetrics ? (
+          <>
+            <section className="metricsGrid five">
+              <MetricCard
+                label="Precision"
+                value={formatPercent(evaluationMetrics.precision)}
+              />
+              <MetricCard
+                label="Recall"
+                value={formatPercent(evaluationMetrics.recall)}
+              />
+              <MetricCard
+                label="F1 score"
+                value={formatPercent(evaluationMetrics.f1_score)}
+              />
+              <MetricCard
+                label="False positive rate"
+                value={formatPercent(evaluationMetrics.false_positive_rate)}
+              />
+              <MetricCard
+                label="False negative rate"
+                value={formatPercent(evaluationMetrics.false_negative_rate)}
+              />
+            </section>
+
+            <section className="evaluationGrid">
+              <article className="card">
+                <h2>Confusion Matrix</h2>
+                <div className="confusionMatrix">
+                  <div className="confusionCell success">
+                    <span>True Positive</span>
+                    <strong>{evaluationMetrics.true_positives}</strong>
+                    <p>Fraud correctly blocked</p>
+                  </div>
+
+                  <div className="confusionCell warning">
+                    <span>False Positive</span>
+                    <strong>{evaluationMetrics.false_positives}</strong>
+                    <p>Legitimate transaction incorrectly blocked</p>
+                  </div>
+
+                  <div className="confusionCell neutral">
+                    <span>True Negative</span>
+                    <strong>{evaluationMetrics.true_negatives}</strong>
+                    <p>Legitimate transaction correctly allowed</p>
+                  </div>
+
+                  <div className="confusionCell danger">
+                    <span>False Negative</span>
+                    <strong>{evaluationMetrics.false_negatives}</strong>
+                    <p>Fraud transaction missed</p>
+                  </div>
+                </div>
+              </article>
+
+              <article className="card">
+                <h2>Error Interpretation</h2>
+                <div className="barChart">
+                  <CountBar
+                    label="False positives"
+                    value={evaluationMetrics.false_positives}
+                    total={
+                      evaluationMetrics.false_positives +
+                      evaluationMetrics.false_negatives
+                    }
+                  />
+                  <CountBar
+                    label="False negatives"
+                    value={evaluationMetrics.false_negatives}
+                    total={
+                      evaluationMetrics.false_positives +
+                      evaluationMetrics.false_negatives
+                    }
+                  />
+                </div>
+
+                <div className="interpretationList">
+                  <p>
+                    <strong>False positive:</strong> a legitimate transaction is
+                    blocked or flagged as fraud.
+                  </p>
+                  <p>
+                    <strong>False negative:</strong> a fraud transaction is allowed
+                    and missed by the system.
+                  </p>
+                </div>
+              </article>
+            </section>
+          </>
+        ) : (
+          <article className="card">
+            <p>Load a simulation batch to display evaluation metrics.</p>
+          </article>
+        )}
+      </section>
+
       {isEvaluationRevealed && (
-        <section className="metricsGrid six">
+        <section className="metricsGrid eight">
           <MetricCard
             label="Reviewed"
             value={analystSummary.reviewedTransactions}
@@ -373,12 +489,20 @@ function App() {
             value={formatPercent(analystSummary.accuracy)}
           />
           <MetricCard
-            label="Frauds missed"
-            value={analystSummary.fraudsMissedByAnalyst}
+            label="System agreements"
+            value={analystSummary.systemAgreements}
           />
           <MetricCard
-            label="Legit blocked"
-            value={analystSummary.legitBlockedByAnalyst}
+            label="System overrides"
+            value={analystSummary.systemDisagreements}
+          />
+          <MetricCard
+            label="Correct overrides"
+            value={analystSummary.correctAnalystOverrides}
+          />
+          <MetricCard
+            label="Incorrect overrides"
+            value={analystSummary.incorrectAnalystOverrides}
           />
         </section>
       )}
@@ -493,6 +617,7 @@ function App() {
                     <th>System decision</th>
                     <th>Outcome</th>
                     <th>Analyst decision</th>
+                    <th>System match</th>
                     <th>Result</th>
                   </tr>
                 </thead>
@@ -559,6 +684,17 @@ function App() {
                             </span>
                           ) : (
                             <span className="mutedText">Not reviewed</span>
+                          )}
+                        </td>
+                        <td>
+                          {analystDecision ? (
+                            <SystemAgreementBadge
+                              transaction={record}
+                              analystDecision={analystDecision}
+                              isEvaluationRevealed={isEvaluationRevealed}
+                            />
+                          ) : (
+                            <span className="mutedText">Pending</span>
                           )}
                         </td>
                         <td>
@@ -629,6 +765,20 @@ function App() {
                   </dd>
                 </div>
                 <div>
+                  <dt>Analyst vs system</dt>
+                  <dd>
+                    {selectedAnalystDecision ? (
+                      <SystemAgreementBadge
+                        transaction={selectedTransaction}
+                        analystDecision={selectedAnalystDecision}
+                        isEvaluationRevealed={isEvaluationRevealed}
+                      />
+                    ) : (
+                      <span className="mutedText">Pending</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
                   <dt>Prediction outcome</dt>
                   <dd>
                     {isEvaluationRevealed ? (
@@ -693,6 +843,7 @@ function App() {
 
 function AnalystDecisionFeedback({ transaction, decision }) {
   const evaluation = getAnalystEvaluation(transaction, decision);
+  const comparison = getAnalystSystemComparison(transaction, decision);
 
   return (
     <div
@@ -709,8 +860,53 @@ function AnalystDecisionFeedback({ transaction, decision }) {
         Analyst selected <strong>{decision}</strong>. Based on the known label,
         expected decision is <strong>{evaluation.expectedDecision}</strong>.
       </p>
+
+      <p>
+        {comparison.isAgreement ? (
+          <span>Analyst agreed with the system decision.</span>
+        ) : (
+          <span>Analyst overrode the system decision.</span>
+        )}
+      </p>
+
+      {!comparison.isAgreement && (
+        <p>
+          {comparison.overrideImprovedOutcome && (
+            <strong>Override improved outcome.</strong>
+          )}
+          {comparison.overrideWorsenedOutcome && (
+            <strong>Override worsened outcome.</strong>
+          )}
+        </p>
+      )}
     </div>
   );
+}
+
+function SystemAgreementBadge({
+  transaction,
+  analystDecision,
+  isEvaluationRevealed,
+}) {
+  const comparison = getAnalystSystemComparison(transaction, analystDecision);
+
+  if (comparison.isAgreement) {
+    return <span className="comparisonBadge agreement">Agreed</span>;
+  }
+
+  if (!isEvaluationRevealed) {
+    return <span className="comparisonBadge override">Override</span>;
+  }
+
+  if (comparison.overrideImprovedOutcome) {
+    return <span className="comparisonBadge improved">Improved</span>;
+  }
+
+  if (comparison.overrideWorsenedOutcome) {
+    return <span className="comparisonBadge worsened">Worsened</span>;
+  }
+
+  return <span className="comparisonBadge override">Override</span>;
 }
 
 function MetricCard({ label, value }) {
@@ -765,10 +961,15 @@ function calculateAnalystSummary(records, decisions) {
   let incorrectDecisions = 0;
   let fraudsMissedByAnalyst = 0;
   let legitBlockedByAnalyst = 0;
+  let systemAgreements = 0;
+  let systemDisagreements = 0;
+  let correctAnalystOverrides = 0;
+  let incorrectAnalystOverrides = 0;
 
   reviewedEntries.forEach(([index, decision]) => {
     const record = records[Number(index)];
     const evaluation = getAnalystEvaluation(record, decision);
+    const comparison = getAnalystSystemComparison(record, decision);
 
     if (evaluation.isCorrect) {
       correctDecisions += 1;
@@ -783,6 +984,20 @@ function calculateAnalystSummary(records, decisions) {
     if (Number(record.label) === 0 && decision === "block") {
       legitBlockedByAnalyst += 1;
     }
+
+    if (comparison.isAgreement) {
+      systemAgreements += 1;
+    } else {
+      systemDisagreements += 1;
+
+      if (comparison.overrideImprovedOutcome) {
+        correctAnalystOverrides += 1;
+      }
+
+      if (comparison.overrideWorsenedOutcome) {
+        incorrectAnalystOverrides += 1;
+      }
+    }
   });
 
   const reviewedTransactions = reviewedEntries.length;
@@ -796,6 +1011,10 @@ function calculateAnalystSummary(records, decisions) {
     accuracy,
     fraudsMissedByAnalyst,
     legitBlockedByAnalyst,
+    systemAgreements,
+    systemDisagreements,
+    correctAnalystOverrides,
+    incorrectAnalystOverrides,
   };
 }
 
@@ -805,6 +1024,27 @@ function getAnalystEvaluation(transaction, decision) {
   return {
     expectedDecision,
     isCorrect: decision === expectedDecision,
+  };
+}
+
+function getAnalystSystemComparison(transaction, analystDecision) {
+  const systemDecision = transaction.decision;
+  const expectedDecision = getExpectedDecision(transaction.label);
+
+  const isAgreement = analystDecision === systemDecision;
+  const analystIsCorrect = analystDecision === expectedDecision;
+  const systemIsCorrect = systemDecision === expectedDecision;
+
+  return {
+    systemDecision,
+    analystDecision,
+    expectedDecision,
+    isAgreement,
+    isOverride: !isAgreement,
+    analystIsCorrect,
+    systemIsCorrect,
+    overrideImprovedOutcome: !isAgreement && analystIsCorrect && !systemIsCorrect,
+    overrideWorsenedOutcome: !isAgreement && !analystIsCorrect && systemIsCorrect,
   };
 }
 
