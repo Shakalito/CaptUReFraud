@@ -39,5 +39,8 @@ For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
 - [Simulation engine](docs/simulation.md) – prediction interface, decision logic, feedback tracking, metrics, and batch simulation
 - [Backend API](docs/api.md) – FastAPI backend endpoints for prediction, simulation, and metrics
 - [Frontend UI](docs/frontend.md) – React dashboard for fraud monitoring, threshold experimentation, and analyst decision simulation
+<<<<<<< HEAD
 - [Evaluation](docs/evaluation.md) – model performance metrics, confusion matrix, business impact, and analyst decision quality
+=======
+>>>>>>> main
 - [Development workflow](docs/development.md) – Git workflow, commit convention, tests, and local artifacts
