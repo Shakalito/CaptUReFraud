@@ -474,7 +474,7 @@ function App() {
       </section>
 
       {isEvaluationRevealed && (
-        <section className="metricsGrid six">
+        <section className="metricsGrid eight">
           <MetricCard
             label="Reviewed"
             value={analystSummary.reviewedTransactions}
@@ -489,12 +489,20 @@ function App() {
             value={formatPercent(analystSummary.accuracy)}
           />
           <MetricCard
-            label="Frauds missed"
-            value={analystSummary.fraudsMissedByAnalyst}
+            label="System agreements"
+            value={analystSummary.systemAgreements}
           />
           <MetricCard
-            label="Legit blocked"
-            value={analystSummary.legitBlockedByAnalyst}
+            label="System overrides"
+            value={analystSummary.systemDisagreements}
+          />
+          <MetricCard
+            label="Correct overrides"
+            value={analystSummary.correctAnalystOverrides}
+          />
+          <MetricCard
+            label="Incorrect overrides"
+            value={analystSummary.incorrectAnalystOverrides}
           />
         </section>
       )}
@@ -609,6 +617,7 @@ function App() {
                     <th>System decision</th>
                     <th>Outcome</th>
                     <th>Analyst decision</th>
+                    <th>System match</th>
                     <th>Result</th>
                   </tr>
                 </thead>
@@ -675,6 +684,17 @@ function App() {
                             </span>
                           ) : (
                             <span className="mutedText">Not reviewed</span>
+                          )}
+                        </td>
+                        <td>
+                          {analystDecision ? (
+                            <SystemAgreementBadge
+                              transaction={record}
+                              analystDecision={analystDecision}
+                              isEvaluationRevealed={isEvaluationRevealed}
+                            />
+                          ) : (
+                            <span className="mutedText">Pending</span>
                           )}
                         </td>
                         <td>
@@ -745,6 +765,20 @@ function App() {
                   </dd>
                 </div>
                 <div>
+                  <dt>Analyst vs system</dt>
+                  <dd>
+                    {selectedAnalystDecision ? (
+                      <SystemAgreementBadge
+                        transaction={selectedTransaction}
+                        analystDecision={selectedAnalystDecision}
+                        isEvaluationRevealed={isEvaluationRevealed}
+                      />
+                    ) : (
+                      <span className="mutedText">Pending</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
                   <dt>Prediction outcome</dt>
                   <dd>
                     {isEvaluationRevealed ? (
@@ -809,6 +843,7 @@ function App() {
 
 function AnalystDecisionFeedback({ transaction, decision }) {
   const evaluation = getAnalystEvaluation(transaction, decision);
+  const comparison = getAnalystSystemComparison(transaction, decision);
 
   return (
     <div
@@ -825,8 +860,53 @@ function AnalystDecisionFeedback({ transaction, decision }) {
         Analyst selected <strong>{decision}</strong>. Based on the known label,
         expected decision is <strong>{evaluation.expectedDecision}</strong>.
       </p>
+
+      <p>
+        {comparison.isAgreement ? (
+          <span>Analyst agreed with the system decision.</span>
+        ) : (
+          <span>Analyst overrode the system decision.</span>
+        )}
+      </p>
+
+      {!comparison.isAgreement && (
+        <p>
+          {comparison.overrideImprovedOutcome && (
+            <strong>Override improved outcome.</strong>
+          )}
+          {comparison.overrideWorsenedOutcome && (
+            <strong>Override worsened outcome.</strong>
+          )}
+        </p>
+      )}
     </div>
   );
+}
+
+function SystemAgreementBadge({
+  transaction,
+  analystDecision,
+  isEvaluationRevealed,
+}) {
+  const comparison = getAnalystSystemComparison(transaction, analystDecision);
+
+  if (comparison.isAgreement) {
+    return <span className="comparisonBadge agreement">Agreed</span>;
+  }
+
+  if (!isEvaluationRevealed) {
+    return <span className="comparisonBadge override">Override</span>;
+  }
+
+  if (comparison.overrideImprovedOutcome) {
+    return <span className="comparisonBadge improved">Improved</span>;
+  }
+
+  if (comparison.overrideWorsenedOutcome) {
+    return <span className="comparisonBadge worsened">Worsened</span>;
+  }
+
+  return <span className="comparisonBadge override">Override</span>;
 }
 
 function MetricCard({ label, value }) {
@@ -881,10 +961,15 @@ function calculateAnalystSummary(records, decisions) {
   let incorrectDecisions = 0;
   let fraudsMissedByAnalyst = 0;
   let legitBlockedByAnalyst = 0;
+  let systemAgreements = 0;
+  let systemDisagreements = 0;
+  let correctAnalystOverrides = 0;
+  let incorrectAnalystOverrides = 0;
 
   reviewedEntries.forEach(([index, decision]) => {
     const record = records[Number(index)];
     const evaluation = getAnalystEvaluation(record, decision);
+    const comparison = getAnalystSystemComparison(record, decision);
 
     if (evaluation.isCorrect) {
       correctDecisions += 1;
@@ -899,6 +984,20 @@ function calculateAnalystSummary(records, decisions) {
     if (Number(record.label) === 0 && decision === "block") {
       legitBlockedByAnalyst += 1;
     }
+
+    if (comparison.isAgreement) {
+      systemAgreements += 1;
+    } else {
+      systemDisagreements += 1;
+
+      if (comparison.overrideImprovedOutcome) {
+        correctAnalystOverrides += 1;
+      }
+
+      if (comparison.overrideWorsenedOutcome) {
+        incorrectAnalystOverrides += 1;
+      }
+    }
   });
 
   const reviewedTransactions = reviewedEntries.length;
@@ -912,6 +1011,10 @@ function calculateAnalystSummary(records, decisions) {
     accuracy,
     fraudsMissedByAnalyst,
     legitBlockedByAnalyst,
+    systemAgreements,
+    systemDisagreements,
+    correctAnalystOverrides,
+    incorrectAnalystOverrides,
   };
 }
 
@@ -921,6 +1024,27 @@ function getAnalystEvaluation(transaction, decision) {
   return {
     expectedDecision,
     isCorrect: decision === expectedDecision,
+  };
+}
+
+function getAnalystSystemComparison(transaction, analystDecision) {
+  const systemDecision = transaction.decision;
+  const expectedDecision = getExpectedDecision(transaction.label);
+
+  const isAgreement = analystDecision === systemDecision;
+  const analystIsCorrect = analystDecision === expectedDecision;
+  const systemIsCorrect = systemDecision === expectedDecision;
+
+  return {
+    systemDecision,
+    analystDecision,
+    expectedDecision,
+    isAgreement,
+    isOverride: !isAgreement,
+    analystIsCorrect,
+    systemIsCorrect,
+    overrideImprovedOutcome: !isAgreement && analystIsCorrect && !systemIsCorrect,
+    overrideWorsenedOutcome: !isAgreement && !analystIsCorrect && systemIsCorrect,
   };
 }
 
