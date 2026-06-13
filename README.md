@@ -24,7 +24,38 @@ For dataset setup instructions, see: [`docs/data_setup.md`](docs/data_setup.md).
 
 The project is intended to run inside Docker.
 
-For Docker setup and runtime commands, see: [`docs/docker.md`](docs/docker.md).
+### Build containers
+
+```bash
+docker compose build
+```
+
+### Start the default application stack
+```bash
+docker compose up -d
+```
+
+This starts the the default application stack
+- FastAPI backend
+- React/Vite frontend  
+- Jupyter is not started by default
+
+Open the application in your browser:  
+Frontend: http://localhost:5173   
+Backend API: http://localhost:8000   
+API docs: http://localhost:8000/docs   
+
+### Start optional Jupyter service
+```bash
+docker compose --profile jupyter up -d jupyter
+```
+
+Stop all containers:
+```bash
+docker compose down
+```
+
+For more information about Docker setup and runtime commands, see: [`docs/docker.md`](docs/docker.md).
 
 For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
 
