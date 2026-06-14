@@ -477,7 +477,7 @@ input:disabled {
 
 .workflowGrid {
   display: grid;
-  grid-template-columns: minmax(420px, 0.95fr) minmax(360px, 1.05fr);
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
   gap: 20px;
   align-items: flex-start;
 }
@@ -645,8 +645,6 @@ tr:hover td {
 .analystPanel {
   position: sticky;
   top: 24px;
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
 }
 
 .panelIntro {
@@ -949,7 +947,6 @@ dd {
     grid-template-columns: 1fr;
   }
 }
-
 /* Compact analyst-focused layout for issue #60 */
 .primaryReviewPanel {
   margin-top: 20px;
@@ -962,120 +959,98 @@ dd {
 }
 
 .transactionList {
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
-  padding-right: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.transactionList::-webkit-scrollbar {
-  width: 10px;
-}
-
-.transactionList::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 999px;
-}
-
-.transactionList::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 999px;
-}
-
-.transactionList::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  display: grid;
+  gap: 12px;
 }
 
 .transactionCard {
   width: 100%;
   display: grid;
-  grid-template-columns: 58px minmax(110px, 1fr) minmax(90px, 0.8fr) minmax(86px, 0.7fr);
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
+  gap: 14px;
+  padding: 16px;
   border: 1px solid #e5e7eb;
-  border-radius: 14px;
+  border-radius: 16px;
   background: #ffffff;
-  color: #172033;
-  cursor: pointer;
+  color: inherit;
   text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 
 .transactionCard:hover {
-  border-color: #c7d2fe;
+  border-color: #bfdbfe;
   background: #f8fafc;
 }
 
-.transactionCard.selectedTransactionCard {
+.selectedTransactionCard {
   border-color: #3b63f6;
   background: #eef2ff;
-  box-shadow: 0 8px 18px rgba(59, 99, 246, 0.12);
+  box-shadow: 0 12px 24px rgba(59, 99, 246, 0.12);
+}
+
+.selectedTransactionCard:hover {
+  background: #e0e7ff;
 }
 
 .transactionCardHeader {
-  display: contents;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
 }
 
-.transactionCardHeader > div {
+.transactionCardHeader > div:first-child {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .queueNumber {
-  font-size: 13px;
-  font-weight: 800;
-  color: #3b63f6;
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 700;
 }
 
 .amountValue {
-  justify-self: end;
-  font-size: 15px;
+  font-size: 20px;
+  color: #172033;
   white-space: nowrap;
 }
 
 .transactionSummaryGrid {
-  display: contents;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.transactionSummaryGrid div {
-  display: none;
-}
-
-.transactionSummaryGrid div:nth-child(2),
-.transactionSummaryGrid div:nth-child(3) {
+.transactionSummaryGrid > div {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: #f8fafc;
 }
 
 .transactionSummaryGrid span:first-child {
-  display: none;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .compactProbabilityCell {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 10px;
-  align-items: center;
-}
-
-.compactProbabilityCell .barMeta {
-  display: flex;
-  justify-content: space-between;
   gap: 8px;
-  font-size: 13px;
-}
-
-.compactProbabilityCell .barMeta span {
-  display: none;
-}
-
-.compactProbabilityCell .barMeta strong {
-  color: #172033;
 }
 
 .revealedLabelRow {
@@ -1196,116 +1171,216 @@ dd {
   }
 }
 
+/* Issue #61: risk levels and suspicious transaction alerts */
+.alertsPanel {
+  margin-bottom: 20px;
+}
 
-.transactionList {
-  max-height: calc(100vh - 220px);
+.alertCounts {
+  min-width: 120px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.alertCounts span {
+  display: block;
+  color: #172033;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.alertCounts strong {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.alertsList {
+  display: grid;
+  gap: 10px;
+  max-height: 260px;
   overflow-y: auto;
   padding-right: 8px;
+}
+
+.alertItem {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #172033;
+  text-align: left;
+  cursor: pointer;
+}
+
+.alertItem:hover,
+.selectedAlertItem {
+  border-color: #f97316;
+  background: #ffedd5;
+}
+
+.alertMain,
+.alertMeta {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.alertMain > span:last-child {
+  margin-left: auto;
+  font-weight: 800;
+}
+
+.alertMeta {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.emptyAlerts {
+  margin: 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+}
+
+.riskBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.risk-ok {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.risk-suspicious {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.risk-fraud {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.transactionList {
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  padding-right: 8px;
+  display: grid;
   gap: 8px;
 }
 
-.transactionCard {
+.transactionRow {
   width: 100%;
   display: grid;
-  grid-template-columns: 72px minmax(90px, 1fr) minmax(90px, 0.8fr) minmax(80px, 0.7fr) minmax(90px, 0.7fr);
-  gap: 12px;
+  grid-template-columns: 54px minmax(90px, 1fr) minmax(90px, 0.8fr) 104px 74px 74px 92px 86px;
+  gap: 10px;
   align-items: center;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #ffffff;
   color: #172033;
-  cursor: pointer;
   text-align: left;
+  cursor: pointer;
 }
 
-.transactionCard:hover {
+.transactionRow:hover {
   border-color: #c7d2fe;
   background: #f8fafc;
 }
 
-.transactionCard.selectedTransactionCard {
+.selectedTransactionRow {
   border-color: #3b63f6;
   background: #eef2ff;
   box-shadow: 0 8px 18px rgba(59, 99, 246, 0.12);
 }
 
-.transactionCardHeader {
-  display: contents;
-}
-
-.transactionCardHeader > div {
+.transactionIdentity {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
-.queueNumber {
+.transactionIdentity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transactionIdentity span,
+.scoreValue {
+  color: #64748b;
   font-size: 13px;
-  font-weight: 800;
-  color: #3b63f6;
+  font-weight: 700;
 }
 
-.transactionCardHeader strong {
-  font-size: 14px;
-}
-
-.amountValue {
+.transactionRow .amountValue {
   justify-self: end;
   font-size: 14px;
   white-space: nowrap;
 }
 
-.transactionSummaryGrid {
-  display: contents;
+.selectedTransactionHero {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.transactionSummaryGrid div {
-  display: none;
+.selectedTransactionHero .riskBadge {
+  align-self: flex-start;
 }
 
-.transactionSummaryGrid div:nth-child(2),
-.transactionSummaryGrid div:nth-child(3) {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+@media (max-width: 1200px) {
+  .transactionRow {
+    grid-template-columns: 54px minmax(110px, 1fr) minmax(90px, 0.8fr) 104px;
+  }
+
+  .transactionRow > .scoreValue,
+  .transactionRow > .pill,
+  .transactionRow > .mutedText,
+  .transactionRow > .resultBadge {
+    justify-self: start;
+  }
+
+  .selectedTransactionHero {
+    grid-template-columns: 1fr;
+  }
 }
 
-.transactionSummaryGrid div:nth-child(2) span:first-child,
-.transactionSummaryGrid div:nth-child(3) span:first-child {
-  display: none;
-}
+@media (max-width: 700px) {
+  .alertMain > span:last-child {
+    margin-left: 0;
+  }
 
-.transactionSummaryGrid div:nth-child(4) {
-  display: flex;
-  justify-content: flex-end;
-}
+  .transactionRow {
+    grid-template-columns: 1fr 1fr;
+  }
 
-.transactionSummaryGrid div:nth-child(4) span:first-child {
-  display: none;
-}
+  .transactionRow .queueNumber {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
 
-.compactProbabilityCell {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.compactProbabilityCell .barMeta {
-  display: block;
-}
-
-.compactProbabilityCell .barMeta span {
-  display: none;
-}
-
-.compactProbabilityCell .barMeta strong {
-  font-size: 13px;
-  color: #475569;
-}
-
-.compactProbabilityCell .probabilityTrack {
-  display: none;
+  .transactionRow .amountValue {
+    justify-self: start;
+  }
 }

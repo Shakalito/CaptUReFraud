@@ -46,6 +46,18 @@ function App() {
     [simulation, analystDecisions]
   );
 
+  const alertTransactions = useMemo(
+    () =>
+      (simulation?.records ?? [])
+        .map((record, index) => ({
+          record,
+          index,
+          riskLevel: getRiskLevel(record.fraud_probability, threshold),
+        }))
+        .filter(({ riskLevel }) => riskLevel !== "OK"),
+    [simulation, threshold]
+  );
+
   useEffect(() => {
     async function loadSystemData() {
       setIsSystemLoading(true);
@@ -313,6 +325,61 @@ function App() {
         </div>
       </section>
 
+      <section className="card alertsPanel">
+        <div className="sectionHeader">
+          <div>
+            <p className="eyebrow">Alerts</p>
+            <h2>Suspicious Transactions</h2>
+            <p>
+              Transactions classified as Suspicious or Fraud using the current
+              threshold. Select an alert to review it in the analyst panel.
+            </p>
+          </div>
+          <div className="alertCounts">
+            <span>{alertTransactions.length}</span>
+            <strong>active alerts</strong>
+          </div>
+        </div>
+
+        {simulation?.records?.length > 0 ? (
+          alertTransactions.length > 0 ? (
+            <div className="alertsList">
+              {alertTransactions.map(({ record, index, riskLevel }) => (
+                <button
+                  key={`${riskLevel}-${record.label}-${record.prediction}-${index}`}
+                  type="button"
+                  className={
+                    selectedTransactionIndex === index
+                      ? "alertItem selectedAlertItem"
+                      : "alertItem"
+                  }
+                  onClick={() => selectTransaction(index)}
+                >
+                  <div className="alertMain">
+                    <span className="queueNumber">#{index + 1}</span>
+                    <RiskBadge level={riskLevel} />
+                    <strong>{record.type ?? "Unknown type"}</strong>
+                    <span>{formatAmount(record.amount)}</span>
+                  </div>
+                  <div className="alertMeta">
+                    <span>Score {formatPercent(record.fraud_probability)}</span>
+                    <span>Prediction {formatPrediction(record.prediction)}</span>
+                    <span>System {record.decision}</span>
+                    <span>Analyst {analystDecisions[index] ?? "Not reviewed"}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="emptyAlerts">
+              No Suspicious or Fraud transactions in the current batch.
+            </p>
+          )
+        ) : (
+          <p>Load a simulation batch to display suspicious transaction alerts.</p>
+        )}
+      </section>
+
       <section className="workflowGrid analystWorkspaceGrid">
         <section className="card tableCard">
           <div className="sectionHeader">
@@ -340,6 +407,7 @@ function App() {
                 const evaluation = analystDecision
                   ? getAnalystEvaluation(record, analystDecision)
                   : null;
+                const riskLevel = getRiskLevel(record.fraud_probability, threshold);
 
                 return (
                   <button
@@ -347,89 +415,45 @@ function App() {
                     type="button"
                     className={
                       selectedTransactionIndex === index
-                        ? "transactionCard selectedTransactionCard"
-                        : "transactionCard"
+                        ? "transactionRow selectedTransactionRow"
+                        : "transactionRow"
                     }
                     onClick={() => selectTransaction(index)}
                   >
-                    <div className="transactionCardHeader">
-                      <div>
-                        <span className="queueNumber">#{index + 1}</span>
-                        <strong>{record.type ?? "Unknown type"}</strong>
-                        <span className="mutedText">Step {record.step ?? "-"}</span>
-                      </div>
-                      <strong className="amountValue">
-                        {formatAmount(record.amount)}
-                      </strong>
+                    <span className="queueNumber">#{index + 1}</span>
+                    <div className="transactionIdentity">
+                      <strong>{record.type ?? "Unknown type"}</strong>
+                      <span>Step {record.step ?? "-"}</span>
                     </div>
-
-                    <div className="transactionSummaryGrid">
-                      <div>
-                        <span>Model</span>
-                        <strong>{formatPrediction(record.prediction)}</strong>
-                      </div>
-                      <div>
-                        <span>System</span>
-                        <span className={`pill ${record.decision}`}>
-                          {record.decision}
-                        </span>
-                      </div>
-                      <div>
-                        <span>Analyst</span>
-                        {analystDecision ? (
-                          <span className={`pill ${analystDecision}`}>
-                            {analystDecision}
-                          </span>
-                        ) : (
-                          <span className="mutedText">Not reviewed</span>
-                        )}
-                      </div>
-                      <div>
-                        <span>Result</span>
-                        {isEvaluationRevealed && evaluation ? (
-                          <span
-                            className={
-                              evaluation.isCorrect
-                                ? "resultBadge success"
-                                : "resultBadge danger"
-                            }
-                          >
-                            {evaluation.isCorrect ? "Correct" : "Incorrect"}
-                          </span>
-                        ) : (
-                          <span className="mutedText">Pending</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="compactProbabilityCell">
-                      <div className="barMeta">
-                        <span>Fraud probability</span>
-                        <strong>{formatPercent(record.fraud_probability)}</strong>
-                      </div>
-                      <div className="probabilityTrack">
-                        <div
-                          className="probabilityFill"
-                          style={{
-                            width: `${Math.min(
-                              Number(record.fraud_probability) * 100,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {isEvaluationRevealed && (
-                      <div className="revealedLabelRow">
-                        <span>Known label</span>
-                        <strong>{formatLabel(record.label)}</strong>
-                        <span
-                          className={`pill outcome-${record.prediction_outcome}`}
-                        >
-                          {record.prediction_outcome}
-                        </span>
-                      </div>
+                    <strong className="amountValue">
+                      {formatAmount(record.amount)}
+                    </strong>
+                    <RiskBadge level={riskLevel} />
+                    <span className="scoreValue">
+                      {formatPercent(record.fraud_probability)}
+                    </span>
+                    <span className={`pill ${record.decision}`}>
+                      {record.decision}
+                    </span>
+                    {analystDecision ? (
+                      <span className={`pill ${analystDecision}`}>
+                        {analystDecision}
+                      </span>
+                    ) : (
+                      <span className="mutedText">Not reviewed</span>
+                    )}
+                    {isEvaluationRevealed && evaluation ? (
+                      <span
+                        className={
+                          evaluation.isCorrect
+                            ? "resultBadge success"
+                            : "resultBadge danger"
+                        }
+                      >
+                        {evaluation.isCorrect ? "Correct" : "Incorrect"}
+                      </span>
+                    ) : (
+                      <span className="mutedText">Pending</span>
                     )}
                   </button>
                 );
@@ -458,6 +482,15 @@ function App() {
                 <div>
                   <span className="mutedText">Amount</span>
                   <strong>{formatAmount(selectedTransaction.amount)}</strong>
+                </div>
+                <div>
+                  <span className="mutedText">Risk level</span>
+                  <RiskBadge
+                    level={getRiskLevel(
+                      selectedTransaction.fraud_probability,
+                      threshold
+                    )}
+                  />
                 </div>
               </div>
 
@@ -937,6 +970,10 @@ function SystemAgreementBadge({
   return <span className="comparisonBadge override">Override</span>;
 }
 
+function RiskBadge({ level }) {
+  return <span className={`riskBadge risk-${level.toLowerCase()}`}>{level}</span>;
+}
+
 function MetricCard({ label, value }) {
   return (
     <article className="metricCard">
@@ -1074,6 +1111,24 @@ function getAnalystSystemComparison(transaction, analystDecision) {
     overrideImprovedOutcome: !isAgreement && analystIsCorrect && !systemIsCorrect,
     overrideWorsenedOutcome: !isAgreement && !analystIsCorrect && systemIsCorrect,
   };
+}
+
+function getRiskLevel(score, threshold) {
+  const numericScore = Number(score);
+
+  if (Number.isNaN(numericScore)) {
+    return "OK";
+  }
+
+  if (numericScore >= Number(threshold)) {
+    return "Fraud";
+  }
+
+  if (numericScore >= 0.4) {
+    return "Suspicious";
+  }
+
+  return "OK";
 }
 
 function formatPercent(value) {
