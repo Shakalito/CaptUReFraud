@@ -50,6 +50,13 @@ class SimulationRecordResponse(BaseModel):
     fraud_missed: bool
     legit_correctly_allowed: bool
     legit_incorrectly_blocked: bool
+    step: Optional[int] = None
+    type: Optional[str] = None
+    amount: Optional[float] = None
+    oldbalanceOrg: Optional[float] = None
+    newbalanceOrig: Optional[float] = None
+    oldbalanceDest: Optional[float] = None
+    newbalanceDest: Optional[float] = None
 
 
 class BatchSimulationResponse(BaseModel):

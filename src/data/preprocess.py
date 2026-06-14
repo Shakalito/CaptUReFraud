@@ -33,6 +33,15 @@ FEATURE_COLUMNS = [
     "type_index",
 ]
 
+BUSINESS_COLUMNS = [
+    "step",
+    "type",
+    "amount",
+    "oldbalanceOrg",
+    "newbalanceOrig",
+    "oldbalanceDest",
+    "newbalanceDest",
+]
 
 def load_raw_dataset(spark: SparkSession, raw_data_path: Union[str, Path]) -> DataFrame:
     path = Path(raw_data_path)
@@ -102,7 +111,13 @@ def assemble_features(
         handleInvalid="keep",
     )
 
-    return assembler.transform(df).select("features", "label")
+    output_columns = [
+        "features",
+        "label",
+        *BUSINESS_COLUMNS,
+    ]
+
+    return assembler.transform(df).select(*output_columns)
 
 
 def prepare_ml_dataset(raw_df: DataFrame) -> DataFrame:
@@ -135,5 +150,5 @@ def save_processed_datasets(
     train_output_path: Union[str, Path],
     test_output_path: Union[str, Path],
 ) -> None:
-    train_df.write.mode("overwrite").parquet(str(train_output_path))
-    test_df.write.mode("overwrite").parquet(str(test_output_path))
+    train_df.coalesce(4).write.mode("overwrite").parquet(str(train_output_path))
+    test_df.coalesce(2).write.mode("overwrite").parquet(str(test_output_path))

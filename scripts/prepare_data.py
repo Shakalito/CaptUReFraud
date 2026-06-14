@@ -32,6 +32,8 @@ def main() -> None:
         )
 
     spark = create_spark_session("PrepareFraudDataset")
+    spark.conf.set("spark.sql.parquet.enableDictionary", "false")
+    spark.conf.set("spark.sql.shuffle.partitions", "4")
 
     try:
         print(f"Loading raw data from: {RAW_DATA_PATH}")

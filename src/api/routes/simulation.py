@@ -104,6 +104,13 @@ def run_batch_simulation(
             "fraud_missed",
             "legit_correctly_allowed",
             "legit_incorrectly_blocked",
+            "step",
+            "type",
+            "amount",
+            "oldbalanceOrg",
+            "newbalanceOrig",
+            "oldbalanceDest",
+            "newbalanceDest",
         ).collect()
 
         records: List[SimulationRecordResponse] = [
@@ -117,6 +124,21 @@ def run_batch_simulation(
                 fraud_missed=bool(row["fraud_missed"]),
                 legit_correctly_allowed=bool(row["legit_correctly_allowed"]),
                 legit_incorrectly_blocked=bool(row["legit_incorrectly_blocked"]),
+                step=int(row["step"]) if row["step"] is not None else None,
+                type=row["type"],
+                amount=float(row["amount"]) if row["amount"] is not None else None,
+                oldbalanceOrg=float(row["oldbalanceOrg"])
+                if row["oldbalanceOrg"] is not None
+                else None,
+                newbalanceOrig=float(row["newbalanceOrig"])
+                if row["newbalanceOrig"] is not None
+                else None,
+                oldbalanceDest=float(row["oldbalanceDest"])
+                if row["oldbalanceDest"] is not None
+                else None,
+                newbalanceDest=float(row["newbalanceDest"])
+                if row["newbalanceDest"] is not None
+                else None,
             )
             for row in rows
         ]

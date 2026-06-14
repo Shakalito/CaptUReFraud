@@ -477,7 +477,7 @@ input:disabled {
 
 .workflowGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
+  grid-template-columns: minmax(420px, 0.95fr) minmax(360px, 1.05fr);
   gap: 20px;
   align-items: flex-start;
 }
@@ -645,6 +645,8 @@ tr:hover td {
 .analystPanel {
   position: sticky;
   top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 .panelIntro {
@@ -946,4 +948,364 @@ dd {
   .metricsGrid.eight {
     grid-template-columns: 1fr;
   }
+}
+
+/* Compact analyst-focused layout for issue #60 */
+.primaryReviewPanel {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.analystWorkspaceGrid {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.45fr);
+  margin-bottom: 20px;
+}
+
+.transactionList {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transactionList::-webkit-scrollbar {
+  width: 10px;
+}
+
+.transactionList::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.transactionList::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.transactionList::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.transactionCard {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 58px minmax(110px, 1fr) minmax(90px, 0.8fr) minmax(86px, 0.7fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  text-align: left;
+}
+
+.transactionCard:hover {
+  border-color: #c7d2fe;
+  background: #f8fafc;
+}
+
+.transactionCard.selectedTransactionCard {
+  border-color: #3b63f6;
+  background: #eef2ff;
+  box-shadow: 0 8px 18px rgba(59, 99, 246, 0.12);
+}
+
+.transactionCardHeader {
+  display: contents;
+}
+
+.transactionCardHeader > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.queueNumber {
+  font-size: 13px;
+  font-weight: 800;
+  color: #3b63f6;
+}
+
+.amountValue {
+  justify-self: end;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.transactionSummaryGrid {
+  display: contents;
+}
+
+.transactionSummaryGrid div {
+  display: none;
+}
+
+.transactionSummaryGrid div:nth-child(2),
+.transactionSummaryGrid div:nth-child(3) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.transactionSummaryGrid span:first-child {
+  display: none;
+}
+
+.compactProbabilityCell {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.compactProbabilityCell .barMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.compactProbabilityCell .barMeta span {
+  display: none;
+}
+
+.compactProbabilityCell .barMeta strong {
+  color: #172033;
+}
+
+.revealedLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  color: #475569;
+}
+
+.revealedLabelRow span:first-child {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.selectedTransactionHero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.selectedTransactionHero > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.selectedTransactionHero strong {
+  font-size: 20px;
+}
+
+.collapsibleSection {
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.collapsibleSection > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 22px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #172033;
+}
+
+.collapsibleSection > summary::marker {
+  color: #3b63f6;
+}
+
+.collapsibleSection > summary strong {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.collapsibleSection[open] > summary {
+  border-bottom: 1px solid #eef2f7;
+}
+
+.compactThresholdPanel {
+  margin: 20px;
+  box-shadow: none;
+}
+
+.compactMetricsGrid {
+  margin: 0 20px 20px;
+}
+
+.collapsibleSection .evaluationSection,
+.collapsibleSection .visualGrid {
+  margin: 20px;
+}
+
+.analystSummaryGrid {
+  margin-top: 20px;
+}
+
+@media (max-width: 1200px) {
+  .analystWorkspaceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .transactionSummaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .transactionCardHeader {
+    flex-direction: column;
+  }
+
+  .transactionSummaryGrid,
+  .selectedTransactionHero {
+    grid-template-columns: 1fr;
+  }
+
+  .collapsibleSection > summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .amountValue {
+    white-space: normal;
+  }
+}
+
+
+.transactionList {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transactionCard {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 72px minmax(90px, 1fr) minmax(90px, 0.8fr) minmax(80px, 0.7fr) minmax(90px, 0.7fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  text-align: left;
+}
+
+.transactionCard:hover {
+  border-color: #c7d2fe;
+  background: #f8fafc;
+}
+
+.transactionCard.selectedTransactionCard {
+  border-color: #3b63f6;
+  background: #eef2ff;
+  box-shadow: 0 8px 18px rgba(59, 99, 246, 0.12);
+}
+
+.transactionCardHeader {
+  display: contents;
+}
+
+.transactionCardHeader > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.queueNumber {
+  font-size: 13px;
+  font-weight: 800;
+  color: #3b63f6;
+}
+
+.transactionCardHeader strong {
+  font-size: 14px;
+}
+
+.amountValue {
+  justify-self: end;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.transactionSummaryGrid {
+  display: contents;
+}
+
+.transactionSummaryGrid div {
+  display: none;
+}
+
+.transactionSummaryGrid div:nth-child(2),
+.transactionSummaryGrid div:nth-child(3) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.transactionSummaryGrid div:nth-child(2) span:first-child,
+.transactionSummaryGrid div:nth-child(3) span:first-child {
+  display: none;
+}
+
+.transactionSummaryGrid div:nth-child(4) {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.transactionSummaryGrid div:nth-child(4) span:first-child {
+  display: none;
+}
+
+.compactProbabilityCell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.compactProbabilityCell .barMeta {
+  display: block;
+}
+
+.compactProbabilityCell .barMeta span {
+  display: none;
+}
+
+.compactProbabilityCell .barMeta strong {
+  font-size: 13px;
+  color: #475569;
+}
+
+.compactProbabilityCell .probabilityTrack {
+  display: none;
 }

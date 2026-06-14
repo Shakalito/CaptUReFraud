@@ -165,11 +165,11 @@ function App() {
       <section className="hero">
         <div>
           <p className="eyebrow">CaptUReFraud</p>
-          <h1>Fraud Monitoring Dashboard</h1>
+          <h1>Fraud Analyst Workspace</h1>
           <p className="heroText">
-            Review simulated transactions, compare model recommendations, adjust
-            the fraud threshold, and evaluate analyst decisions after revealing
-            known outcomes.
+            Review simulated transactions, inspect business context and model
+            risk, then decide whether each transaction should be allowed or
+            blocked.
           </p>
         </div>
 
@@ -226,16 +226,16 @@ function App() {
           <div className="workflowStep">
             <span>2</span>
             <div>
-              <strong>Review decisions</strong>
-              <p>Select transactions and mark allow or block.</p>
+              <strong>Review risk</strong>
+              <p>Select a transaction and inspect business details.</p>
             </div>
           </div>
 
           <div className="workflowStep">
             <span>3</span>
             <div>
-              <strong>Evaluate results</strong>
-              <p>Reveal known labels and measure analyst performance.</p>
+              <strong>Decide and evaluate</strong>
+              <p>Mark allow/block, then reveal known outcomes.</p>
             </div>
           </div>
         </section>
@@ -282,285 +282,13 @@ function App() {
         </section>
       </section>
 
-      <section className="thresholdPanel">
-        <div>
-          <p className="eyebrow">Threshold experiment</p>
-          <h2>Decision threshold</h2>
-          <p>
-            Lower threshold usually detects more fraud but may block more
-            legitimate transactions. Higher threshold usually reduces false
-            positives but may miss more fraud.
-          </p>
-        </div>
-
-        <div className="thresholdControls">
-          <div className="thresholdValue">
-            <span>Selected threshold</span>
-            <strong>{pendingThreshold.toFixed(2)}</strong>
-          </div>
-
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={pendingThreshold}
-            onChange={handleThresholdChange}
-            disabled={isDashboardLoading}
-          />
-
-          <div className="thresholdScale">
-            <span>0.00</span>
-            <span>0.50</span>
-            <span>1.00</span>
-          </div>
-
-          <div className="thresholdButtons">
-            <button
-              className="primaryButton"
-              type="button"
-              onClick={applyThreshold}
-              disabled={isDashboardLoading}
-            >
-              Apply threshold
-            </button>
-
-            <button
-              className="secondaryButton"
-              type="button"
-              onClick={resetThreshold}
-              disabled={isDashboardLoading}
-            >
-              Reset to 0.80
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="metricsGrid six">
-        <MetricCard
-          label="Fraud recall"
-          value={metrics ? formatPercent(metrics.fraud_recall) : "-"}
-        />
-        <MetricCard
-          label="Missed frauds"
-          value={metrics?.missed_frauds ?? "-"}
-        />
-        <MetricCard
-          label="Blocked legitimate"
-          value={metrics?.blocked_legit_transactions ?? "-"}
-        />
-        <MetricCard
-          label="Fraud loss"
-          value={metrics ? formatCurrency(metrics.estimated_fraud_loss) : "-"}
-        />
-        <MetricCard
-          label="Blocking cost"
-          value={metrics ? formatCurrency(metrics.estimated_blocking_cost) : "-"}
-        />
-        <MetricCard
-          label="Total cost"
-          value={metrics ? formatCurrency(metrics.estimated_total_cost) : "-"}
-        />
-      </section>
-
-      <section className="evaluationSection">
-        <div className="sectionHeader">
-          <div>
-            <p className="eyebrow">Evaluation</p>
-            <h2>Model decision quality</h2>
-            <p>
-              Evaluation metrics show how threshold-based system decisions perform
-              against known labels. This section explains false positives, false
-              negatives, and the precision-recall trade-off.
-            </p>
-          </div>
-        </div>
-
-        {evaluationMetrics ? (
-          <>
-            <section className="metricsGrid five">
-              <MetricCard
-                label="Precision"
-                value={formatPercent(evaluationMetrics.precision)}
-              />
-              <MetricCard
-                label="Recall"
-                value={formatPercent(evaluationMetrics.recall)}
-              />
-              <MetricCard
-                label="F1 score"
-                value={formatPercent(evaluationMetrics.f1_score)}
-              />
-              <MetricCard
-                label="False positive rate"
-                value={formatPercent(evaluationMetrics.false_positive_rate)}
-              />
-              <MetricCard
-                label="False negative rate"
-                value={formatPercent(evaluationMetrics.false_negative_rate)}
-              />
-            </section>
-
-            <section className="evaluationGrid">
-              <article className="card">
-                <h2>Confusion Matrix</h2>
-                <div className="confusionMatrix">
-                  <div className="confusionCell success">
-                    <span>True Positive</span>
-                    <strong>{evaluationMetrics.true_positives}</strong>
-                    <p>Fraud correctly blocked</p>
-                  </div>
-
-                  <div className="confusionCell warning">
-                    <span>False Positive</span>
-                    <strong>{evaluationMetrics.false_positives}</strong>
-                    <p>Legitimate transaction incorrectly blocked</p>
-                  </div>
-
-                  <div className="confusionCell neutral">
-                    <span>True Negative</span>
-                    <strong>{evaluationMetrics.true_negatives}</strong>
-                    <p>Legitimate transaction correctly allowed</p>
-                  </div>
-
-                  <div className="confusionCell danger">
-                    <span>False Negative</span>
-                    <strong>{evaluationMetrics.false_negatives}</strong>
-                    <p>Fraud transaction missed</p>
-                  </div>
-                </div>
-              </article>
-
-              <article className="card">
-                <h2>Error Interpretation</h2>
-                <div className="barChart">
-                  <CountBar
-                    label="False positives"
-                    value={evaluationMetrics.false_positives}
-                    total={
-                      evaluationMetrics.false_positives +
-                      evaluationMetrics.false_negatives
-                    }
-                  />
-                  <CountBar
-                    label="False negatives"
-                    value={evaluationMetrics.false_negatives}
-                    total={
-                      evaluationMetrics.false_positives +
-                      evaluationMetrics.false_negatives
-                    }
-                  />
-                </div>
-
-                <div className="interpretationList">
-                  <p>
-                    <strong>False positive:</strong> a legitimate transaction is
-                    blocked or flagged as fraud.
-                  </p>
-                  <p>
-                    <strong>False negative:</strong> a fraud transaction is allowed
-                    and missed by the system.
-                  </p>
-                </div>
-              </article>
-            </section>
-          </>
-        ) : (
-          <article className="card">
-            <p>Load a simulation batch to display evaluation metrics.</p>
-          </article>
-        )}
-      </section>
-
-      {isEvaluationRevealed && (
-        <section className="metricsGrid eight">
-          <MetricCard
-            label="Reviewed"
-            value={analystSummary.reviewedTransactions}
-          />
-          <MetricCard label="Correct" value={analystSummary.correctDecisions} />
-          <MetricCard
-            label="Incorrect"
-            value={analystSummary.incorrectDecisions}
-          />
-          <MetricCard
-            label="Analyst accuracy"
-            value={formatPercent(analystSummary.accuracy)}
-          />
-          <MetricCard
-            label="System agreements"
-            value={analystSummary.systemAgreements}
-          />
-          <MetricCard
-            label="System overrides"
-            value={analystSummary.systemDisagreements}
-          />
-          <MetricCard
-            label="Correct overrides"
-            value={analystSummary.correctAnalystOverrides}
-          />
-          <MetricCard
-            label="Incorrect overrides"
-            value={analystSummary.incorrectAnalystOverrides}
-          />
-        </section>
-      )}
-
-      <section className="visualGrid">
-        <article className="card">
-          <h2>Cost Breakdown</h2>
-          {metrics ? (
-            <div className="barChart">
-              <CostBar
-                label="Fraud loss"
-                value={metrics.estimated_fraud_loss}
-                total={metrics.estimated_total_cost}
-              />
-              <CostBar
-                label="Blocking cost"
-                value={metrics.estimated_blocking_cost}
-                total={metrics.estimated_total_cost}
-              />
-            </div>
-          ) : (
-            <p>Load API data to display estimated cost breakdown.</p>
-          )}
-        </article>
-
-        <article className="card">
-          <h2>Decision Trade-off</h2>
-          {metrics ? (
-            <div className="barChart">
-              <CountBar
-                label="Missed frauds"
-                value={metrics.missed_frauds}
-                total={
-                  metrics.missed_frauds + metrics.blocked_legit_transactions
-                }
-              />
-              <CountBar
-                label="Blocked legitimate"
-                value={metrics.blocked_legit_transactions}
-                total={
-                  metrics.missed_frauds + metrics.blocked_legit_transactions
-                }
-              />
-            </div>
-          ) : (
-            <p>Load API data to display decision trade-off.</p>
-          )}
-        </article>
-      </section>
-
-      <section className="reviewPanel">
+      <section className="reviewPanel primaryReviewPanel">
         <div>
           <p className="eyebrow">Analyst simulation</p>
           <h2>Review transactions before revealing labels</h2>
           <p>
-            Select transactions from the table, make allow/block decisions, and
-            reveal known labels only when you are ready to evaluate analyst
-            performance.
+            The known label is hidden until evaluation. Select a transaction,
+            review the model recommendation, and choose an analyst decision.
           </p>
         </div>
 
@@ -585,14 +313,14 @@ function App() {
         </div>
       </section>
 
-      <section className="workflowGrid">
+      <section className="workflowGrid analystWorkspaceGrid">
         <section className="card tableCard">
           <div className="sectionHeader">
             <div>
-              <h2>Transaction Simulation Records</h2>
+              <h2>Transaction queue</h2>
               <p>
-                Select a transaction, review model output, and choose an analyst
-                decision before revealing known labels.
+                Compact queue view. Select a transaction to see full business
+                details in the review panel.
               </p>
             </div>
             <button
@@ -606,117 +334,106 @@ function App() {
           </div>
 
           {simulation?.records?.length > 0 ? (
-            <div className="tableWrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>True label</th>
-                    <th>Prediction</th>
-                    <th>Fraud probability</th>
-                    <th>System decision</th>
-                    <th>Outcome</th>
-                    <th>Analyst decision</th>
-                    <th>System match</th>
-                    <th>Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {simulation.records.map((record, index) => {
-                    const analystDecision = analystDecisions[index];
-                    const evaluation = analystDecision
-                      ? getAnalystEvaluation(record, analystDecision)
-                      : null;
+            <div className="transactionList">
+              {simulation.records.map((record, index) => {
+                const analystDecision = analystDecisions[index];
+                const evaluation = analystDecision
+                  ? getAnalystEvaluation(record, analystDecision)
+                  : null;
 
-                    return (
-                      <tr
-                        key={`${record.label}-${record.prediction}-${index}`}
-                        className={
-                          selectedTransactionIndex === index ? "selectedRow" : ""
-                        }
-                        onClick={() => selectTransaction(index)}
-                      >
-                        <td>{index + 1}</td>
-                        <td>
-                          {isEvaluationRevealed ? (
-                            formatLabel(record.label)
-                          ) : (
-                            <span className="hiddenValue">Hidden</span>
-                          )}
-                        </td>
-                        <td>{formatPrediction(record.prediction)}</td>
-                        <td>
-                          <div className="probabilityCell">
-                            <span>{formatPercent(record.fraud_probability)}</span>
-                            <div className="probabilityTrack">
-                              <div
-                                className="probabilityFill"
-                                style={{
-                                  width: `${Math.min(
-                                    Number(record.fraud_probability) * 100,
-                                    100
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`pill ${record.decision}`}>
-                            {record.decision}
+                return (
+                  <button
+                    key={`${record.label}-${record.prediction}-${index}`}
+                    type="button"
+                    className={
+                      selectedTransactionIndex === index
+                        ? "transactionCard selectedTransactionCard"
+                        : "transactionCard"
+                    }
+                    onClick={() => selectTransaction(index)}
+                  >
+                    <div className="transactionCardHeader">
+                      <div>
+                        <span className="queueNumber">#{index + 1}</span>
+                        <strong>{record.type ?? "Unknown type"}</strong>
+                        <span className="mutedText">Step {record.step ?? "-"}</span>
+                      </div>
+                      <strong className="amountValue">
+                        {formatAmount(record.amount)}
+                      </strong>
+                    </div>
+
+                    <div className="transactionSummaryGrid">
+                      <div>
+                        <span>Model</span>
+                        <strong>{formatPrediction(record.prediction)}</strong>
+                      </div>
+                      <div>
+                        <span>System</span>
+                        <span className={`pill ${record.decision}`}>
+                          {record.decision}
+                        </span>
+                      </div>
+                      <div>
+                        <span>Analyst</span>
+                        {analystDecision ? (
+                          <span className={`pill ${analystDecision}`}>
+                            {analystDecision}
                           </span>
-                        </td>
-                        <td>
-                          {isEvaluationRevealed ? (
-                            <span
-                              className={`pill outcome-${record.prediction_outcome}`}
-                            >
-                              {record.prediction_outcome}
-                            </span>
-                          ) : (
-                            <span className="hiddenValue">Hidden</span>
-                          )}
-                        </td>
-                        <td>
-                          {analystDecision ? (
-                            <span className={`pill ${analystDecision}`}>
-                              {analystDecision}
-                            </span>
-                          ) : (
-                            <span className="mutedText">Not reviewed</span>
-                          )}
-                        </td>
-                        <td>
-                          {analystDecision ? (
-                            <SystemAgreementBadge
-                              transaction={record}
-                              analystDecision={analystDecision}
-                              isEvaluationRevealed={isEvaluationRevealed}
-                            />
-                          ) : (
-                            <span className="mutedText">Pending</span>
-                          )}
-                        </td>
-                        <td>
-                          {isEvaluationRevealed && evaluation ? (
-                            <span
-                              className={
-                                evaluation.isCorrect
-                                  ? "resultBadge success"
-                                  : "resultBadge danger"
-                              }
-                            >
-                              {evaluation.isCorrect ? "Correct" : "Incorrect"}
-                            </span>
-                          ) : (
-                            <span className="mutedText">Pending</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        ) : (
+                          <span className="mutedText">Not reviewed</span>
+                        )}
+                      </div>
+                      <div>
+                        <span>Result</span>
+                        {isEvaluationRevealed && evaluation ? (
+                          <span
+                            className={
+                              evaluation.isCorrect
+                                ? "resultBadge success"
+                                : "resultBadge danger"
+                            }
+                          >
+                            {evaluation.isCorrect ? "Correct" : "Incorrect"}
+                          </span>
+                        ) : (
+                          <span className="mutedText">Pending</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="compactProbabilityCell">
+                      <div className="barMeta">
+                        <span>Fraud probability</span>
+                        <strong>{formatPercent(record.fraud_probability)}</strong>
+                      </div>
+                      <div className="probabilityTrack">
+                        <div
+                          className="probabilityFill"
+                          style={{
+                            width: `${Math.min(
+                              Number(record.fraud_probability) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {isEvaluationRevealed && (
+                      <div className="revealedLabelRow">
+                        <span>Known label</span>
+                        <strong>{formatLabel(record.label)}</strong>
+                        <span
+                          className={`pill outcome-${record.prediction_outcome}`}
+                        >
+                          {record.prediction_outcome}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <p>Click Load / refresh batch to fetch simulation records.</p>
@@ -729,15 +446,22 @@ function App() {
           {selectedTransaction ? (
             <>
               <p className="panelIntro">
-                Review the model recommendation and choose an analyst decision.
-                The known label is hidden until evaluation.
+                Review model output and business context before choosing allow
+                or block.
               </p>
 
-              <dl className="details">
+              <div className="selectedTransactionHero">
                 <div>
-                  <dt>Selected row</dt>
-                  <dd>{selectedTransactionIndex + 1}</dd>
+                  <span className="mutedText">Selected row</span>
+                  <strong>#{selectedTransactionIndex + 1}</strong>
                 </div>
+                <div>
+                  <span className="mutedText">Amount</span>
+                  <strong>{formatAmount(selectedTransaction.amount)}</strong>
+                </div>
+              </div>
+
+              <dl className="details">
                 <div>
                   <dt>True label</dt>
                   <dd>
@@ -746,6 +470,28 @@ function App() {
                     ) : (
                       <span className="hiddenValue">Hidden</span>
                     )}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Step</dt>
+                  <dd>{selectedTransaction.step ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt>Type</dt>
+                  <dd>{selectedTransaction.type ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt>Sender balance</dt>
+                  <dd>
+                    {formatAmount(selectedTransaction.oldbalanceOrg)} →{" "}
+                    {formatAmount(selectedTransaction.newbalanceOrig)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Receiver balance</dt>
+                  <dd>
+                    {formatAmount(selectedTransaction.oldbalanceDest)} →{" "}
+                    {formatAmount(selectedTransaction.newbalanceDest)}
                   </dd>
                 </div>
                 <div>
@@ -813,7 +559,7 @@ function App() {
 
               {selectedAnalystDecision ? (
                 <p>
-                  Analyst decision:{" "}
+                  Analyst decision: {" "}
                   <span className={`pill ${selectedAnalystDecision}`}>
                     {selectedAnalystDecision}
                   </span>
@@ -831,12 +577,294 @@ function App() {
             </>
           ) : (
             <p>
-              Select a transaction from the table to review model output and
+              Select a transaction from the queue to review model output and
               choose an analyst decision.
             </p>
           )}
         </aside>
       </section>
+
+      {isEvaluationRevealed && (
+        <section className="metricsGrid eight analystSummaryGrid">
+          <MetricCard
+            label="Reviewed"
+            value={analystSummary.reviewedTransactions}
+          />
+          <MetricCard label="Correct" value={analystSummary.correctDecisions} />
+          <MetricCard
+            label="Incorrect"
+            value={analystSummary.incorrectDecisions}
+          />
+          <MetricCard
+            label="Analyst accuracy"
+            value={formatPercent(analystSummary.accuracy)}
+          />
+          <MetricCard
+            label="System agreements"
+            value={analystSummary.systemAgreements}
+          />
+          <MetricCard
+            label="System overrides"
+            value={analystSummary.systemDisagreements}
+          />
+          <MetricCard
+            label="Correct overrides"
+            value={analystSummary.correctAnalystOverrides}
+          />
+          <MetricCard
+            label="Incorrect overrides"
+            value={analystSummary.incorrectAnalystOverrides}
+          />
+        </section>
+      )}
+
+      <details className="collapsibleSection" open>
+        <summary>
+          <span>Threshold experiment</span>
+          <strong>Threshold {pendingThreshold.toFixed(2)}</strong>
+        </summary>
+
+        <section className="thresholdPanel compactThresholdPanel">
+          <div>
+            <p className="eyebrow">Threshold experiment</p>
+            <h2>Decision threshold</h2>
+            <p>
+              Lower threshold usually detects more fraud but may block more
+              legitimate transactions. Higher threshold usually reduces false
+              positives but may miss more fraud.
+            </p>
+          </div>
+
+          <div className="thresholdControls">
+            <div className="thresholdValue">
+              <span>Selected threshold</span>
+              <strong>{pendingThreshold.toFixed(2)}</strong>
+            </div>
+
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={pendingThreshold}
+              onChange={handleThresholdChange}
+              disabled={isDashboardLoading}
+            />
+
+            <div className="thresholdScale">
+              <span>0.00</span>
+              <span>0.50</span>
+              <span>1.00</span>
+            </div>
+
+            <div className="thresholdButtons">
+              <button
+                className="primaryButton"
+                type="button"
+                onClick={applyThreshold}
+                disabled={isDashboardLoading}
+              >
+                Apply threshold
+              </button>
+
+              <button
+                className="secondaryButton"
+                type="button"
+                onClick={resetThreshold}
+                disabled={isDashboardLoading}
+              >
+                Reset to 0.80
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="metricsGrid six compactMetricsGrid">
+          <MetricCard
+            label="Fraud recall"
+            value={metrics ? formatPercent(metrics.fraud_recall) : "-"}
+          />
+          <MetricCard
+            label="Missed frauds"
+            value={metrics?.missed_frauds ?? "-"}
+          />
+          <MetricCard
+            label="Blocked legitimate"
+            value={metrics?.blocked_legit_transactions ?? "-"}
+          />
+          <MetricCard
+            label="Fraud loss"
+            value={metrics ? formatCurrency(metrics.estimated_fraud_loss) : "-"}
+          />
+          <MetricCard
+            label="Blocking cost"
+            value={
+              metrics ? formatCurrency(metrics.estimated_blocking_cost) : "-"
+            }
+          />
+          <MetricCard
+            label="Total cost"
+            value={metrics ? formatCurrency(metrics.estimated_total_cost) : "-"}
+          />
+        </section>
+      </details>
+
+      <details className="collapsibleSection">
+        <summary>
+          <span>Model decision quality</span>
+          <strong>Precision / recall / confusion matrix</strong>
+        </summary>
+
+        <section className="evaluationSection">
+          {evaluationMetrics ? (
+            <>
+              <section className="metricsGrid five">
+                <MetricCard
+                  label="Precision"
+                  value={formatPercent(evaluationMetrics.precision)}
+                />
+                <MetricCard
+                  label="Recall"
+                  value={formatPercent(evaluationMetrics.recall)}
+                />
+                <MetricCard
+                  label="F1 score"
+                  value={formatPercent(evaluationMetrics.f1_score)}
+                />
+                <MetricCard
+                  label="False positive rate"
+                  value={formatPercent(evaluationMetrics.false_positive_rate)}
+                />
+                <MetricCard
+                  label="False negative rate"
+                  value={formatPercent(evaluationMetrics.false_negative_rate)}
+                />
+              </section>
+
+              <section className="evaluationGrid">
+                <article className="card">
+                  <h2>Confusion Matrix</h2>
+                  <div className="confusionMatrix">
+                    <div className="confusionCell success">
+                      <span>True Positive</span>
+                      <strong>{evaluationMetrics.true_positives}</strong>
+                      <p>Fraud correctly blocked</p>
+                    </div>
+
+                    <div className="confusionCell warning">
+                      <span>False Positive</span>
+                      <strong>{evaluationMetrics.false_positives}</strong>
+                      <p>Legitimate transaction incorrectly blocked</p>
+                    </div>
+
+                    <div className="confusionCell neutral">
+                      <span>True Negative</span>
+                      <strong>{evaluationMetrics.true_negatives}</strong>
+                      <p>Legitimate transaction correctly allowed</p>
+                    </div>
+
+                    <div className="confusionCell danger">
+                      <span>False Negative</span>
+                      <strong>{evaluationMetrics.false_negatives}</strong>
+                      <p>Fraud transaction missed</p>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="card">
+                  <h2>Error Interpretation</h2>
+                  <div className="barChart">
+                    <CountBar
+                      label="False positives"
+                      value={evaluationMetrics.false_positives}
+                      total={
+                        evaluationMetrics.false_positives +
+                        evaluationMetrics.false_negatives
+                      }
+                    />
+                    <CountBar
+                      label="False negatives"
+                      value={evaluationMetrics.false_negatives}
+                      total={
+                        evaluationMetrics.false_positives +
+                        evaluationMetrics.false_negatives
+                      }
+                    />
+                  </div>
+
+                  <div className="interpretationList">
+                    <p>
+                      <strong>False positive:</strong> a legitimate transaction is
+                      blocked or flagged as fraud.
+                    </p>
+                    <p>
+                      <strong>False negative:</strong> a fraud transaction is allowed
+                      and missed by the system.
+                    </p>
+                  </div>
+                </article>
+              </section>
+            </>
+          ) : (
+            <article className="card">
+              <p>Load a simulation batch to display evaluation metrics.</p>
+            </article>
+          )}
+        </section>
+      </details>
+
+      <details className="collapsibleSection">
+        <summary>
+          <span>Cost and decision trade-off</span>
+          <strong>Fraud loss / blocking cost</strong>
+        </summary>
+
+        <section className="visualGrid">
+          <article className="card">
+            <h2>Cost Breakdown</h2>
+            {metrics ? (
+              <div className="barChart">
+                <CostBar
+                  label="Fraud loss"
+                  value={metrics.estimated_fraud_loss}
+                  total={metrics.estimated_total_cost}
+                />
+                <CostBar
+                  label="Blocking cost"
+                  value={metrics.estimated_blocking_cost}
+                  total={metrics.estimated_total_cost}
+                />
+              </div>
+            ) : (
+              <p>Load API data to display estimated cost breakdown.</p>
+            )}
+          </article>
+
+          <article className="card">
+            <h2>Decision Trade-off</h2>
+            {metrics ? (
+              <div className="barChart">
+                <CountBar
+                  label="Missed frauds"
+                  value={metrics.missed_frauds}
+                  total={
+                    metrics.missed_frauds + metrics.blocked_legit_transactions
+                  }
+                />
+                <CountBar
+                  label="Blocked legitimate"
+                  value={metrics.blocked_legit_transactions}
+                  total={
+                    metrics.missed_frauds + metrics.blocked_legit_transactions
+                  }
+                />
+              </div>
+            ) : (
+              <p>Load API data to display decision trade-off.</p>
+            )}
+          </article>
+        </section>
+      </details>
     </main>
   );
 }
@@ -1064,6 +1092,16 @@ function formatCurrency(value) {
   return Number(value).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
+  });
+}
+
+function formatAmount(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "-";
+  }
+
+  return Number(value).toLocaleString("en-US", {
+    maximumFractionDigits: 2,
   });
 }
 
