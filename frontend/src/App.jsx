@@ -25,6 +25,12 @@ function App() {
 
   const [selectedTransactionIndex, setSelectedTransactionIndex] = useState(null);
   const [analystDecisions, setAnalystDecisions] = useState({});
+  const [filters, setFilters] = useState({
+    type: "all",
+    riskLevel: "all",
+    minProbability: "",
+    minAmount: "",
+  });
   const [isEvaluationRevealed, setIsEvaluationRevealed] = useState(false);
 
   const [isSystemLoading, setIsSystemLoading] = useState(true);
@@ -45,6 +51,78 @@ function App() {
     () => calculateAnalystSummary(simulation?.records ?? [], analystDecisions),
     [simulation, analystDecisions]
   );
+
+  const alertTransactions = useMemo(
+    () =>
+      (simulation?.records ?? [])
+        .map((record, index) => ({
+          record,
+          index,
+          riskLevel: getRiskLevel(record.fraud_probability, threshold),
+        }))
+        .filter(({ riskLevel }) => riskLevel !== "OK"),
+    [simulation, threshold]
+  );
+
+  const availableTransactionTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (simulation?.records ?? [])
+            .map((record) => record.type)
+            .filter(Boolean)
+        )
+      ).sort(),
+    [simulation]
+  );
+
+  const filteredTransactions = useMemo(() => {
+    const minProbability = Number(filters.minProbability) / 100;
+    const minAmount = Number(filters.minAmount);
+
+    return (simulation?.records ?? [])
+      .map((record, index) => ({
+        record,
+        index,
+        riskLevel: getRiskLevel(record.fraud_probability, threshold),
+      }))
+      .filter(({ record, riskLevel }) => {
+        const probability = Number(record.fraud_probability);
+        const amount = Number(record.amount);
+
+        if (filters.type !== "all" && record.type !== filters.type) {
+          return false;
+        }
+
+        if (filters.riskLevel !== "all" && riskLevel !== filters.riskLevel) {
+          return false;
+        }
+
+        if (
+          filters.minProbability !== "" &&
+          !Number.isNaN(minProbability) &&
+          probability < minProbability
+        ) {
+          return false;
+        }
+
+        if (
+          filters.minAmount !== "" &&
+          !Number.isNaN(minAmount) &&
+          amount < minAmount
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+  }, [simulation, threshold, filters]);
+
+  const hasActiveFilters =
+    filters.type !== "all" ||
+    filters.riskLevel !== "all" ||
+    filters.minProbability !== "" ||
+    filters.minAmount !== "";
 
   useEffect(() => {
     async function loadSystemData() {
@@ -111,6 +189,24 @@ function App() {
     setPendingThreshold(Number(event.target.value));
   }
 
+  function handleFilterChange(event) {
+    const { name, value } = event.target;
+
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      [name]: value,
+    }));
+  }
+
+  function clearFilters() {
+    setFilters({
+      type: "all",
+      riskLevel: "all",
+      minProbability: "",
+      minAmount: "",
+    });
+  }
+
   function applyThreshold() {
     setThreshold(pendingThreshold);
     loadDashboardData({
@@ -167,7 +263,7 @@ function App() {
           <p className="eyebrow">CaptUReFraud</p>
           <h1>Fraud Analyst Workspace</h1>
           <p className="heroText">
-            Review simulated transactions, inspect business context and model
+            Review simulated incoming transactions, inspect business context and model
             risk, then decide whether each transaction should be allowed or
             blocked.
           </p>
@@ -196,7 +292,7 @@ function App() {
             onClick={handleLoadBatch}
             disabled={isDashboardLoading}
           >
-            {isDashboardLoading ? "Loading..." : "Load / refresh batch"}
+            {isDashboardLoading ? "Loading..." : "Fetch incoming transactions"}
           </button>
         </div>
       </section>
@@ -218,8 +314,8 @@ function App() {
           <div className="workflowStep">
             <span>1</span>
             <div>
-              <strong>Load transactions</strong>
-              <p>Fetch a simulated batch from the backend.</p>
+              <strong>Fetch incoming data</strong>
+              <p>Fetch a new random batch from the simulated transaction stream.</p>
             </div>
           </div>
 
@@ -284,11 +380,12 @@ function App() {
 
       <section className="reviewPanel primaryReviewPanel">
         <div>
-          <p className="eyebrow">Analyst simulation</p>
-          <h2>Review transactions before revealing labels</h2>
+          <p className="eyebrow">Incoming stream review</p>
+          <h2>Review incoming transactions before revealing labels</h2>
           <p>
-            The known label is hidden until evaluation. Select a transaction,
-            review the model recommendation, and choose an analyst decision.
+            Each refresh simulates a new incoming batch from held-out test data.
+            The known label is hidden until evaluation while the analyst reviews
+            the model recommendation and chooses a decision.
           </p>
         </div>
 
@@ -313,14 +410,71 @@ function App() {
         </div>
       </section>
 
+      <section className="card alertsPanel">
+        <div className="sectionHeader">
+          <div>
+            <p className="eyebrow">Alerts</p>
+            <h2>Suspicious Transactions</h2>
+            <p>
+              Incoming transactions classified as Suspicious or Fraud using the
+              current threshold. Select an alert to review it in the analyst panel.
+            </p>
+          </div>
+          <div className="alertCounts">
+            <span>{alertTransactions.length}</span>
+            <strong>active alerts</strong>
+          </div>
+        </div>
+
+        {simulation?.records?.length > 0 ? (
+          alertTransactions.length > 0 ? (
+            <div className="alertsList">
+              {alertTransactions.map(({ record, index, riskLevel }) => (
+                <button
+                  key={`${riskLevel}-${record.label}-${record.prediction}-${index}`}
+                  type="button"
+                  className={
+                    selectedTransactionIndex === index
+                      ? "alertItem selectedAlertItem"
+                      : "alertItem"
+                  }
+                  onClick={() => selectTransaction(index)}
+                >
+                  <div className="alertMain">
+                    <span className="queueNumber transactionId">
+                      {getTransactionDisplayId(record, index)}
+                    </span>
+                    <RiskBadge level={riskLevel} />
+                    <strong>{record.type ?? "Unknown type"}</strong>
+                    <span>{formatAmount(record.amount)}</span>
+                  </div>
+                  <div className="alertMeta">
+                    <span>Score {formatPercent(record.fraud_probability)}</span>
+                    <span>Prediction {formatPrediction(record.prediction)}</span>
+                    <span>System {record.decision}</span>
+                    <span>Analyst {analystDecisions[index] ?? "Not reviewed"}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="emptyAlerts">
+              No Suspicious or Fraud transactions in the current incoming batch.
+            </p>
+          )
+        ) : (
+          <p>Fetch incoming transactions to display suspicious transaction alerts.</p>
+        )}
+      </section>
+
       <section className="workflowGrid analystWorkspaceGrid">
         <section className="card tableCard">
           <div className="sectionHeader">
             <div>
-              <h2>Transaction queue</h2>
+              <h2>Incoming transaction stream</h2>
               <p>
-                Compact queue view. Select a transaction to see full business
-                details in the review panel.
+                Each refresh fetches a new random batch of held-out test transactions
+                and runs model predictions before analyst review.
               </p>
             </div>
             <button
@@ -329,114 +483,170 @@ function App() {
               onClick={handleLoadBatch}
               disabled={isDashboardLoading}
             >
-              Refresh
+              Fetch new batch
             </button>
           </div>
 
-          {simulation?.records?.length > 0 ? (
-            <div className="transactionList">
-              {simulation.records.map((record, index) => {
-                const analystDecision = analystDecisions[index];
-                const evaluation = analystDecision
-                  ? getAnalystEvaluation(record, analystDecision)
-                  : null;
+          {simulation?.records?.length > 0 && (
+            <section className="filterPanel" aria-label="Transaction filters">
+              <div className="filterHeader">
+                <div>
+                  <strong>Analyst filters</strong>
+                  <p>
+                    Narrow the stream by transaction type, risk level, amount and
+                    fraud probability.
+                  </p>
+                </div>
+                <span>
+                  Showing {filteredTransactions.length} of {simulation.records.length}
+                </span>
+              </div>
 
-                return (
-                  <button
+              <div className="filterGrid">
+                <label>
+                  Type
+                  <select
+                    name="type"
+                    value={filters.type}
+                    onChange={handleFilterChange}
+                    disabled={isDashboardLoading}
+                  >
+                    <option value="all">All types</option>
+                    {availableTransactionTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Risk level
+                  <select
+                    name="riskLevel"
+                    value={filters.riskLevel}
+                    onChange={handleFilterChange}
+                    disabled={isDashboardLoading}
+                  >
+                    <option value="all">All risk levels</option>
+                    <option value="OK">OK</option>
+                    <option value="Suspicious">Suspicious</option>
+                    <option value="Fraud">Fraud</option>
+                  </select>
+                </label>
+
+                <label>
+                  Min probability (%)
+                  <input
+                    type="number"
+                    name="minProbability"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder="0"
+                    value={filters.minProbability}
+                    onChange={handleFilterChange}
+                    disabled={isDashboardLoading}
+                  />
+                </label>
+
+                <label>
+                  Min amount
+                  <input
+                    type="number"
+                    name="minAmount"
+                    min="0"
+                    step="100"
+                    placeholder="0"
+                    value={filters.minAmount}
+                    onChange={handleFilterChange}
+                    disabled={isDashboardLoading}
+                  />
+                </label>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  className="linkButton"
+                  type="button"
+                  onClick={clearFilters}
+                  disabled={isDashboardLoading}
+                >
+                  Clear filters
+                </button>
+              )}
+            </section>
+          )}
+
+          {simulation?.records?.length > 0 ? (
+            filteredTransactions.length > 0 ? (
+              <div className="transactionList">
+                {filteredTransactions.map(({ record, index, riskLevel }) => {
+                  const analystDecision = analystDecisions[index];
+                  const evaluation = analystDecision
+                    ? getAnalystEvaluation(record, analystDecision)
+                    : null;
+
+                  return (
+                    <button
                     key={`${record.label}-${record.prediction}-${index}`}
                     type="button"
                     className={
                       selectedTransactionIndex === index
-                        ? "transactionCard selectedTransactionCard"
-                        : "transactionCard"
+                        ? "transactionRow selectedTransactionRow"
+                        : "transactionRow"
                     }
                     onClick={() => selectTransaction(index)}
                   >
-                    <div className="transactionCardHeader">
-                      <div>
-                        <span className="queueNumber">#{index + 1}</span>
-                        <strong>{record.type ?? "Unknown type"}</strong>
-                        <span className="mutedText">Step {record.step ?? "-"}</span>
-                      </div>
-                      <strong className="amountValue">
-                        {formatAmount(record.amount)}
-                      </strong>
+                    <span className="queueNumber transactionId">
+                      {getTransactionDisplayId(record, index)}
+                    </span>
+                    <div className="transactionIdentity">
+                      <strong>{record.type ?? "Unknown type"}</strong>
+                      <span>Step {record.step ?? "-"}</span>
                     </div>
-
-                    <div className="transactionSummaryGrid">
-                      <div>
-                        <span>Model</span>
-                        <strong>{formatPrediction(record.prediction)}</strong>
-                      </div>
-                      <div>
-                        <span>System</span>
-                        <span className={`pill ${record.decision}`}>
-                          {record.decision}
-                        </span>
-                      </div>
-                      <div>
-                        <span>Analyst</span>
-                        {analystDecision ? (
-                          <span className={`pill ${analystDecision}`}>
-                            {analystDecision}
-                          </span>
-                        ) : (
-                          <span className="mutedText">Not reviewed</span>
-                        )}
-                      </div>
-                      <div>
-                        <span>Result</span>
-                        {isEvaluationRevealed && evaluation ? (
-                          <span
-                            className={
-                              evaluation.isCorrect
-                                ? "resultBadge success"
-                                : "resultBadge danger"
-                            }
-                          >
-                            {evaluation.isCorrect ? "Correct" : "Incorrect"}
-                          </span>
-                        ) : (
-                          <span className="mutedText">Pending</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="compactProbabilityCell">
-                      <div className="barMeta">
-                        <span>Fraud probability</span>
-                        <strong>{formatPercent(record.fraud_probability)}</strong>
-                      </div>
-                      <div className="probabilityTrack">
-                        <div
-                          className="probabilityFill"
-                          style={{
-                            width: `${Math.min(
-                              Number(record.fraud_probability) * 100,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {isEvaluationRevealed && (
-                      <div className="revealedLabelRow">
-                        <span>Known label</span>
-                        <strong>{formatLabel(record.label)}</strong>
-                        <span
-                          className={`pill outcome-${record.prediction_outcome}`}
-                        >
-                          {record.prediction_outcome}
-                        </span>
-                      </div>
+                    <strong className="amountValue">
+                      {formatAmount(record.amount)}
+                    </strong>
+                    <RiskBadge level={riskLevel} />
+                    <span className="scoreValue">
+                      {formatPercent(record.fraud_probability)}
+                    </span>
+                    <span className={`pill ${record.decision}`}>
+                      {record.decision}
+                    </span>
+                    {analystDecision ? (
+                      <span className={`pill ${analystDecision}`}>
+                        {analystDecision}
+                      </span>
+                    ) : (
+                      <span className="mutedText">Not reviewed</span>
                     )}
-                  </button>
-                );
-              })}
-            </div>
+                    {isEvaluationRevealed && evaluation ? (
+                      <span
+                        className={
+                          evaluation.isCorrect
+                            ? "resultBadge success"
+                            : "resultBadge danger"
+                        }
+                      >
+                        {evaluation.isCorrect ? "Correct" : "Incorrect"}
+                      </span>
+                    ) : (
+                      <span className="mutedText">Pending</span>
+                    )}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="emptyFilterState">
+                No transactions match the current filters. Clear filters or fetch a
+                new incoming batch.
+              </p>
+            )
           ) : (
-            <p>Click Load / refresh batch to fetch simulation records.</p>
+            <p>Click Fetch incoming transactions to simulate a new incoming batch.</p>
           )}
         </section>
 
@@ -452,12 +662,23 @@ function App() {
 
               <div className="selectedTransactionHero">
                 <div>
-                  <span className="mutedText">Selected row</span>
-                  <strong>#{selectedTransactionIndex + 1}</strong>
+                  <span className="mutedText">Transaction ID</span>
+                  <strong>
+                    {getTransactionDisplayId(selectedTransaction, selectedTransactionIndex)}
+                  </strong>
                 </div>
                 <div>
                   <span className="mutedText">Amount</span>
                   <strong>{formatAmount(selectedTransaction.amount)}</strong>
+                </div>
+                <div>
+                  <span className="mutedText">Risk level</span>
+                  <RiskBadge
+                    level={getRiskLevel(
+                      selectedTransaction.fraud_probability,
+                      threshold
+                    )}
+                  />
                 </div>
               </div>
 
@@ -937,6 +1158,10 @@ function SystemAgreementBadge({
   return <span className="comparisonBadge override">Override</span>;
 }
 
+function RiskBadge({ level }) {
+  return <span className={`riskBadge risk-${level.toLowerCase()}`}>{level}</span>;
+}
+
 function MetricCard({ label, value }) {
   return (
     <article className="metricCard">
@@ -1076,6 +1301,24 @@ function getAnalystSystemComparison(transaction, analystDecision) {
   };
 }
 
+function getRiskLevel(score, threshold) {
+  const numericScore = Number(score);
+
+  if (Number.isNaN(numericScore)) {
+    return "OK";
+  }
+
+  if (numericScore >= Number(threshold)) {
+    return "Fraud";
+  }
+
+  if (numericScore >= 0.4) {
+    return "Suspicious";
+  }
+
+  return "OK";
+}
+
 function formatPercent(value) {
   if (value === null || value === undefined) {
     return "-";
@@ -1103,6 +1346,10 @@ function formatAmount(value) {
   return Number(value).toLocaleString("en-US", {
     maximumFractionDigits: 2,
   });
+}
+
+function getTransactionDisplayId(record, index) {
+  return record.transaction_id ?? `BATCH-${index + 1}`;
 }
 
 function formatLabel(value) {
