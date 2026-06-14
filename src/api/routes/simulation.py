@@ -3,6 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, Query
 from src.api.errors import ApiError
+from pyspark.sql.functions import rand
 
 from src.api.config import (
     DEFAULT_DECISION_THRESHOLD,
@@ -78,7 +79,11 @@ def run_batch_simulation(
     spark = create_spark_session("ApiBatchSimulation")
 
     try:
-        transactions_df = spark.read.parquet(str(TEST_DATA_PATH)).limit(limit)
+        transactions_df = (
+            spark.read.parquet(str(TEST_DATA_PATH))
+            .orderBy(rand())
+            .limit(limit)
+        )
 
         if transactions_df.count() == 0:
             raise ApiError(
