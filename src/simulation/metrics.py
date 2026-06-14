@@ -1,10 +1,13 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import Dict
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, sum as spark_sum
+from pyspark.sql.functions import col, coalesce, count, lit, sum as spark_sum, when
+
+
+@dataclass(frozen=True)
+class CostConfig:
+    missed_fraud_cost: float = 1000.0
+    blocked_legit_cost: float = 50.0
 
 
 @dataclass(frozen=True)
@@ -20,49 +23,35 @@ class BusinessMetrics:
     estimated_total_cost: float
 
 
-@dataclass(frozen=True)
-class CostConfig:
-    missed_fraud_cost: float = 1000.0
-    blocked_legit_cost: float = 50.0
-
-
 def calculate_business_metrics(
     simulation_df: DataFrame,
-    cost_config: CostConfig | None = None,
+    cost_config: CostConfig,
 ) -> BusinessMetrics:
-    config = cost_config or CostConfig()
-
-    required_columns = {
-        "label",
-        "fraud_correctly_detected",
-        "fraud_missed",
-        "legit_incorrectly_blocked",
-    }
-
-    missing_columns = required_columns.difference(simulation_df.columns)
-
-    if missing_columns:
-        raise ValueError(f"Simulation DataFrame is missing columns: {sorted(missing_columns)}")
+    total_frauds_expr = _total_frauds_expression(simulation_df)
+    fraud_loss_expr = _estimated_fraud_loss_expression(
+        simulation_df=simulation_df,
+        cost_config=cost_config,
+    )
 
     metrics_row = simulation_df.select(
-        spark_sum(col("label")).alias("total_frauds"),
-        spark_sum(col("fraud_correctly_detected").cast("int")).alias("detected_frauds"),
-        spark_sum(col("fraud_missed").cast("int")).alias("missed_frauds"),
-        spark_sum(col("legit_incorrectly_blocked").cast("int")).alias(
-            "blocked_legit_transactions"
-        ),
+        count(lit(1)).alias("total_transactions"),
+        total_frauds_expr.alias("total_frauds"),
+        _count_flag("fraud_correctly_detected").alias("detected_frauds"),
+        _count_flag("fraud_missed").alias("missed_frauds"),
+        _count_flag("legit_incorrectly_blocked").alias("blocked_legit_transactions"),
+        fraud_loss_expr.alias("estimated_fraud_loss"),
+        _estimated_blocking_cost_expression(cost_config).alias("estimated_blocking_cost"),
     ).collect()[0]
 
-    total_transactions = simulation_df.count()
-    total_frauds = int(metrics_row["total_frauds"] or 0)
-    detected_frauds = int(metrics_row["detected_frauds"] or 0)
-    missed_frauds = int(metrics_row["missed_frauds"] or 0)
-    blocked_legit_transactions = int(metrics_row["blocked_legit_transactions"] or 0)
+    total_transactions = _to_int(metrics_row["total_transactions"])
+    total_frauds = _to_int(metrics_row["total_frauds"])
+    detected_frauds = _to_int(metrics_row["detected_frauds"])
+    missed_frauds = _to_int(metrics_row["missed_frauds"])
+    blocked_legit_transactions = _to_int(metrics_row["blocked_legit_transactions"])
+    estimated_fraud_loss = _to_float(metrics_row["estimated_fraud_loss"])
+    estimated_blocking_cost = _to_float(metrics_row["estimated_blocking_cost"])
 
     fraud_recall = detected_frauds / total_frauds if total_frauds > 0 else 0.0
-
-    estimated_fraud_loss = missed_frauds * config.missed_fraud_cost
-    estimated_blocking_cost = blocked_legit_transactions * config.blocked_legit_cost
     estimated_total_cost = estimated_fraud_loss + estimated_blocking_cost
 
     return BusinessMetrics(
@@ -78,7 +67,51 @@ def calculate_business_metrics(
     )
 
 
-def business_metrics_to_dict(metrics: BusinessMetrics) -> Dict[str, float | int]:
+def _total_frauds_expression(simulation_df: DataFrame):
+    if "label" in simulation_df.columns:
+        return spark_sum(when(col("label") == 1, 1).otherwise(0))
+
+    return _count_flag("fraud_correctly_detected") + _count_flag("fraud_missed")
+
+
+def _estimated_fraud_loss_expression(
+    simulation_df: DataFrame,
+    cost_config: CostConfig,
+):
+    if "amount" in simulation_df.columns:
+        missed_fraud_amount = coalesce(
+            col("amount").cast("double"),
+            lit(cost_config.missed_fraud_cost),
+        )
+
+        return spark_sum(
+            when(col("fraud_missed") == True, missed_fraud_amount).otherwise(lit(0.0))
+        )
+
+    return spark_sum(
+        when(col("fraud_missed") == True, lit(cost_config.missed_fraud_cost)).otherwise(lit(0.0))
+    )
+
+
+def _estimated_blocking_cost_expression(cost_config: CostConfig):
+    return spark_sum(
+        when(col("legit_incorrectly_blocked") == True, lit(cost_config.blocked_legit_cost))
+        .otherwise(lit(0.0))
+    )
+
+
+def _count_flag(column_name: str):
+    return spark_sum(when(col(column_name) == True, 1).otherwise(0))
+
+
+def _to_int(value) -> int:
+    return int(value or 0)
+
+
+def _to_float(value) -> float:
+    return float(value or 0.0)
+
+def business_metrics_to_dict(metrics: BusinessMetrics) -> dict:
     return {
         "total_transactions": metrics.total_transactions,
         "total_frauds": metrics.total_frauds,
