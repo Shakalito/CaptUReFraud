@@ -1018,6 +1018,14 @@ dd {
   font-weight: 700;
 }
 
+.transactionId {
+  min-width: 110px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
 .amountValue {
   font-size: 20px;
   color: #172033;
@@ -1382,5 +1390,122 @@ dd {
 
   .transactionRow .amountValue {
     justify-self: start;
+  }
+}
+
+
+/* Analyst stream filters */
+.filterPanel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.filterHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.filterHeader strong {
+  color: #172033;
+  font-size: 16px;
+}
+
+.filterHeader p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.filterHeader span {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.filterGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filterGrid select,
+.filterGrid input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.linkButton {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3b63f6;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.linkButton:hover {
+  color: #244ce0;
+  text-decoration: underline;
+}
+
+.linkButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.emptyFilterState {
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+  .filterGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .filterHeader {
+    flex-direction: column;
+  }
+
+  .filterGrid {
+    grid-template-columns: 1fr;
   }
 }

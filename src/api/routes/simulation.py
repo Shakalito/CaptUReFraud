@@ -2,8 +2,7 @@ from pathlib import Path
 from typing import List
 
 from fastapi import APIRouter, Query
-from src.api.errors import ApiError
-from pyspark.sql.functions import rand
+from pyspark.sql.functions import col, concat, concat_ws, lit, rand, sha2, substring, upper
 
 from src.api.config import (
     DEFAULT_DECISION_THRESHOLD,
@@ -12,7 +11,7 @@ from src.api.config import (
     MAX_SIMULATION_BATCH_LIMIT,
     MIN_DECISION_THRESHOLD,
 )
-
+from src.api.errors import ApiError
 from src.api.schemas import BatchSimulationResponse, BusinessMetricsResponse, SimulationRecordResponse
 from src.common.spark import create_spark_session
 from src.simulation.engine import SimulationConfig, SimulationEngine
@@ -53,6 +52,27 @@ def validate_simulation_artifacts() -> None:
         )
 
 
+def add_transaction_id(transactions_df):
+    transaction_fingerprint = concat_ws(
+        "|",
+        col("step").cast("string"),
+        col("type").cast("string"),
+        col("amount").cast("string"),
+        col("oldbalanceOrg").cast("string"),
+        col("newbalanceOrig").cast("string"),
+        col("oldbalanceDest").cast("string"),
+        col("newbalanceDest").cast("string"),
+    )
+
+    return transactions_df.withColumn(
+        "transaction_id",
+        concat(
+            lit("TX-"),
+            upper(substring(sha2(transaction_fingerprint, 256), 1, 12)),
+        ),
+    )
+
+
 def create_simulation_engine(spark, threshold: float) -> SimulationEngine:
     predictor = FraudPredictor(
         spark=spark,
@@ -85,6 +105,8 @@ def run_batch_simulation(
             .limit(limit)
         )
 
+        transactions_df = add_transaction_id(transactions_df)
+
         if transactions_df.count() == 0:
             raise ApiError(
                 status_code=404,
@@ -100,6 +122,7 @@ def run_batch_simulation(
         simulation_df = engine.simulate_batch(transactions_df)
 
         rows = simulation_df.select(
+            "transaction_id",
             "label",
             "prediction",
             "fraud_probability",
@@ -120,6 +143,7 @@ def run_batch_simulation(
 
         records: List[SimulationRecordResponse] = [
             SimulationRecordResponse(
+                transaction_id=str(row["transaction_id"]),
                 label=int(row["label"]),
                 prediction=int(row["prediction"]),
                 fraud_probability=float(row["fraud_probability"]),

@@ -41,6 +41,7 @@ class PredictionResponse(BaseModel):
 
 
 class SimulationRecordResponse(BaseModel):
+    transaction_id: Optional[str] = None
     label: int
     prediction: int
     fraud_probability: float
