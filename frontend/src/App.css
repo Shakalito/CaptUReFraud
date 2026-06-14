@@ -1300,10 +1300,18 @@ dd {
 .transactionRow {
   width: 100%;
   display: grid;
-  grid-template-columns: 54px minmax(90px, 1fr) minmax(90px, 0.8fr) 104px 74px 74px 92px 86px;
-  gap: 10px;
+  grid-template-columns:
+    minmax(132px, 0.9fr)
+    minmax(120px, 0.9fr)
+    minmax(110px, 0.8fr)
+    104px
+    86px
+    82px
+    108px
+    92px;
+  gap: 12px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #ffffff;
@@ -1323,10 +1331,28 @@ dd {
   box-shadow: 0 8px 18px rgba(59, 99, 246, 0.12);
 }
 
+.transactionRow .queueNumber.transactionId {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #3b63f6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  word-break: break-word;
+}
+
 .transactionIdentity {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -1349,17 +1375,13 @@ dd {
   white-space: nowrap;
 }
 
-.selectedTransactionHero {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.selectedTransactionHero .riskBadge {
-  align-self: flex-start;
-}
-
 @media (max-width: 1200px) {
   .transactionRow {
-    grid-template-columns: 54px minmax(110px, 1fr) minmax(90px, 0.8fr) 104px;
+    grid-template-columns:
+      minmax(132px, 1fr)
+      minmax(120px, 1fr)
+      minmax(110px, 1fr)
+      104px;
   }
 
   .transactionRow > .scoreValue,
@@ -1371,6 +1393,24 @@ dd {
 
   .selectedTransactionHero {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .alertMain > span:last-child {
+    margin-left: 0;
+  }
+
+  .transactionRow {
+    grid-template-columns: 1fr;
+  }
+
+  .transactionRow .queueNumber.transactionId {
+    justify-self: start;
+  }
+
+  .transactionRow .amountValue {
+    justify-self: start;
   }
 }
 
