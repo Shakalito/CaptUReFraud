@@ -1,6 +1,6 @@
 # Data pipeline
 
-This document describes the data processing workflow used to prepare the fraud detection dataset for machine learning.
+This document describes the data processing workflow used to prepare the fraud detection dataset for machine learning and simulation.
 
 ---
 
@@ -53,21 +53,28 @@ The raw-to-processed data preparation can be run without notebooks using:
 python3 scripts/prepare_data.py
 ```
 
+In the Docker workflow, run it inside the app container:
+
+```bash
+docker compose exec app python3 scripts/prepare_data.py
+```
+
 The script:
 
-- loads raw CSV files from data/raw/,
+- loads raw CSV files from `data/raw/`,
 - validates the expected raw schema,
 - applies feature engineering,
-- creates amount_log,
+- creates `amount_log`,
 - creates balance delta features,
 - creates balance error flags,
-- indexes transaction type into type_index,
-- assembles the final features vector,
-- creates the binary label column,
+- indexes transaction type into `type_index`,
+- assembles the final Spark ML `features` vector,
+- creates the binary `label` column,
+- keeps selected business transaction fields for API and UI display,
 - splits the dataset into train and test sets,
 - writes processed datasets to:
-- data/processed/train/
-- data/processed/test/
+  - `data/processed/train/`
+  - `data/processed/test/`
 
 This script makes the project reproducible from the downloaded raw dataset to ML-ready Spark datasets.
 
@@ -75,10 +82,18 @@ This script makes the project reproducible from the downloaded raw dataset to ML
 
 Final ML-ready dataset preparation was initially developed in: `notebooks/03_dataset_preparation.ipynb`
 
-The ML dataset contains:
+The processed train/test datasets contain:
 
 - `features` column: Spark ML vector used by the model,
-- `label` column: binary target variable.
+- `label` column: binary target variable,
+- business transaction fields used later by the API and frontend:
+  - `step`,
+  - `type`,
+  - `amount`,
+  - `oldbalanceOrg`,
+  - `newbalanceOrig`,
+  - `oldbalanceDest`,
+  - `newbalanceDest`.
 
 Label meaning:
 
@@ -92,7 +107,7 @@ The prepared dataset is split into:
 
 The training dataset is used for model training.
 
-The test dataset is used later as the source of simulated incoming transactions.
+The test dataset is used later as the source of simulated incoming transactions. The API samples random batches from this held-out test split to simulate new incoming transaction batches.
 
 Additional ML dataset details are available in: [`docs/ml_dataset.md`](ml_dataset.md)
 
