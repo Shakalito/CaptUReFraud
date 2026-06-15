@@ -58,6 +58,8 @@ Stop all containers:
 docker compose down
 ```
 
+or run [stop.bat](stop.bat) for Windows or [stop.sh](stop.sh) for Linux.
+
 For more information about Docker setup and runtime commands, see: [`docs/docker.md`](docs/docker.md).
 
 For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
