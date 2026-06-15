@@ -35,8 +35,7 @@ docker compose build
 docker compose up -d
 ```
 
-**Important!**
-After that run [train.bat](train.bat) for training model.
+You can run [start.bat](start.bat) for simple start project.
 
 This starts the the default application stack
 - FastAPI backend
