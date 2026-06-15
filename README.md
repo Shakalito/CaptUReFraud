@@ -12,56 +12,155 @@ CaptUReFraud is a Spark-based fraud detection project focused on financial trans
 - `models/` – trained models (not tracked)
 - `docs/` – additional project documentation
 
+## Requirements
+
+The recommended way to run this project is Docker-based.
+
+Required:
+
+- Docker Desktop / Docker Engine
+- Docker Compose v2 (`docker compose` command)
+- Kaggle dataset downloaded into `data/raw/`
+
+Optional:
+
+- Kaggle API token, if you want to download the dataset with `scripts/download_data.py`
+- Python with Kaggle CLI installed, if running the dataset download script locally
+
 ## Dataset
 
 This project uses a dataset from Kaggle: [Online Payments Fraud Detection Dataset](https://www.kaggle.com/datasets/rupakroy/online-payments-fraud-detection-dataset)
 
 Raw data is not tracked by Git.
 
-For dataset setup instructions, see: [`docs/data_setup.md`](docs/data_setup.md).
+The dataset must be available in:
 
-## Running the project
+```text
+ data/raw/
+```
 
-The project is intended to run inside Docker.
+You can either:
 
-If you don't want to follow these steps, you can run [start.bat](start.bat) or [start.sh](start.sh) to start the project automatically.
+- download it automatically with `scripts/download_data.py`, or
+- download it manually from Kaggle and place the CSV file in `data/raw/`.
 
-### Build containers
+For detailed dataset setup instructions, see: [`docs/data_setup.md`](docs/data_setup.md).
+
+## Quick start
+
+The easiest way to start the project is to use the startup scripts from the project root.
+
+### Windows
+
+```powershell
+.\start.bat
+```
+
+### Linux / macOS
+
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+The startup script checks Docker, downloads the dataset if needed, builds containers, starts the application stack, prepares processed data, trains the model, runs a sample prediction, and opens the frontend.
+
+After startup, open:
+
+```text
+Frontend: http://localhost:5173
+API docs: http://localhost:8000/docs
+```
+
+## Manual run
+
+Use these commands if you prefer to run the setup step by step.
+
+### 1. Download or prepare the dataset
+
+From the project root:
+
+```bash
+python scripts/download_data.py
+```
+
+If you do not use the Kaggle API, download the dataset manually and place the CSV file in:
+
+```text
+data/raw/
+```
+
+### 2. Build Docker containers
 
 ```bash
 docker compose build
 ```
 
-### Start the default application stack
+### 3. Start the default application stack
+
 ```bash
 docker compose up -d
 ```
 
-This starts the the default application stack
+This starts:
+
 - FastAPI backend
-- React/Vite frontend  
-- Jupyter is not started by default
+- React/Vite frontend
 
-Open the application in your browser:  
-Frontend: http://localhost:5173   
-Backend API: http://localhost:8000   
-API docs: http://localhost:8000/docs   
+Jupyter is not started by default.
 
-### Start optional Jupyter service
+### 4. Prepare data and train the model
+
+```bash
+docker compose exec app python3 scripts/prepare_data.py
+docker compose exec app python3 scripts/train_model.py
+docker compose exec app python3 scripts/predict_sample.py
+```
+
+### 5. Open the application
+
+```text
+Frontend: http://localhost:5173
+Backend API: http://localhost:8000
+API docs: http://localhost:8000/docs
+```
+
+## Optional Jupyter service
+
+Jupyter is optional and is not required to run the application.
+
+To start Jupyter:
+
 ```bash
 docker compose --profile jupyter up -d jupyter
 ```
 
-Stop all containers:
+Then open:
+
+```text
+http://localhost:8888
+```
+
+## Stop the project
+
 ```bash
 docker compose down
 ```
 
-or run [stop.bat](stop.bat) for Windows or [stop.sh](stop.sh) for Linux.
+Or use the helper scripts:
 
-For more information about Docker setup and runtime commands, see: [`docs/docker.md`](docs/docker.md).
+### Windows
 
-For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
+```powershell
+.\stop.bat
+```
+
+### Linux / macOS
+
+```bash
+chmod +x stop.sh
+./stop.sh
+```
 
 ## Documentation
 
@@ -69,10 +168,10 @@ For simulation scripts, see: [`docs/simulation.md`](docs/simulation.md).
 - [Docker setup](docs/docker.md) – Docker runtime, app container, Jupyter profile, and basic commands
 - [EDA notes](docs/eda.md) – exploratory data analysis observations and fraud distribution notes
 - [Data pipeline](docs/data_pipeline.md) – preprocessing, feature engineering, and train/test dataset preparation
-- [ML dataset](docs/ml_dataset.md) – structure of the final Spark ML dataset with `features` and `label`
+- [ML dataset](docs/ml_dataset.md) – structure of the final Spark ML dataset with model features and business fields
 - [Model overview](docs/model.md) – Random Forest model, class weighting, training, prediction output, and persistence
-- [Simulation engine](docs/simulation.md) – prediction interface, decision logic, feedback tracking, metrics, and batch simulation
-- [Backend API](docs/api.md) – FastAPI backend endpoints for prediction, simulation, and metrics
-- [Frontend UI](docs/frontend.md) – React dashboard for fraud monitoring, threshold experimentation, and analyst decision simulation
+- [Simulation engine](docs/simulation.md) – prediction interface, decision logic, feedback tracking, metrics, and incoming transaction simulation
+- [Backend API](docs/api.md) – FastAPI backend endpoints for prediction, simulation, evaluation, and metrics
+- [Frontend UI](docs/frontend.md) – React dashboard for fraud monitoring, threshold experimentation, alerts, filtering, and analyst decision simulation
 - [Evaluation](docs/evaluation.md) – model performance metrics, confusion matrix, business impact, and analyst decision quality
 - [Development workflow](docs/development.md) – Git workflow, commit convention, tests, and local artifacts
