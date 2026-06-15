@@ -24,6 +24,8 @@ For dataset setup instructions, see: [`docs/data_setup.md`](docs/data_setup.md).
 
 The project is intended to run inside Docker.
 
+If you don't want to follow these steps, you can run [start.bat](start.bat) or [start.sh](start.sh) to start the project automatically.
+
 ### Build containers
 
 ```bash
@@ -34,8 +36,6 @@ docker compose build
 ```bash
 docker compose up -d
 ```
-
-You can run [start.bat](start.bat) for simple start project.
 
 This starts the the default application stack
 - FastAPI backend
