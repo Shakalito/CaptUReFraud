@@ -8,12 +8,32 @@ This project uses Docker as the main runtime environment for Spark-based scripts
 
 The recommended workflow is:
 
-- use the local system only for editing files,
-- run Spark, model, simulation, and backend commands inside Docker,
+- use the local system for editing files and dataset download/setup,
+- run Spark, model, simulation, backend, and frontend commands through Docker Compose,
 - start the default application stack with Docker Compose,
 - start Jupyter Lab only when notebook-based exploration is needed.
 
-A separate Python virtual environment is not required inside the Docker container.
+A separate Python virtual environment is not required for the Docker-based workflow.
+
+---
+
+## Automated startup scripts
+
+The easiest way to start the project is to run the startup script from the project root.
+
+Windows:
+
+```powershell
+.\start.bat
+```
+
+Linux / macOS:
+
+```bash
+./start.sh
+```
+
+The startup script checks Docker availability, downloads the dataset if needed, builds containers, starts services, prepares data, trains the model, runs a sample prediction, and opens the frontend.
 
 ---
 
@@ -54,6 +74,34 @@ Available URLs:
 
 ---
 
+## Generate required local artifacts
+
+Model-dependent endpoints require these local artifacts:
+
+- `data/raw/`
+- `data/processed/train/`
+- `data/processed/test/`
+- `models/fraud_model/`
+
+Download the dataset from the project root:
+
+```bash
+python scripts/download_data.py
+```
+
+Then run preprocessing and training inside the app container:
+
+```bash
+docker compose up -d app
+docker compose exec app python3 scripts/prepare_data.py
+docker compose exec app python3 scripts/train_model.py
+docker compose exec app python3 scripts/predict_sample.py
+```
+
+These artifacts are not tracked by Git and must be generated locally.
+
+---
+
 ## Start only the backend/app service
 
 ```bash
@@ -71,8 +119,10 @@ docker compose exec app bash
 ```
 
 Inside the container, the project is mounted at:
-`/app`
 
+```text
+/app
+```
 
 ---
 
@@ -81,9 +131,9 @@ Inside the container, the project is mounted at:
 Run inside the app container:
 
 ```bash
-python3 --version
-python3 -c "import pyspark; print(pyspark.__version__)"
-python3 -c "import pandas; print(pandas.__version__)"
+docker compose exec app python3 --version
+docker compose exec app python3 -c "import pyspark; print(pyspark.__version__)"
+docker compose exec app python3 -c "import pandas; print(pandas.__version__)"
 ```
 
 Expected core versions:
@@ -97,10 +147,17 @@ pandas: 2.0.3
 
 ## Run backend tests
 
-Run inside the app container:
+```bash
+docker compose exec app python3 -m pytest tests
+```
+
+---
+
+## Run frontend checks
 
 ```bash
-python3 -m pytest tests
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run build
 ```
 
 ---
@@ -114,12 +171,10 @@ Required local artifacts:
 - `data/processed/test/`
 - `models/fraud_model/`
 
-These artifacts are not tracked by Git and must be generated locally.
-
-Run inside the app container:
+Run:
 
 ```bash
-python3 scripts/predict_sample.py
+docker compose exec app python3 scripts/predict_sample.py
 ```
 
 The script loads a small batch from `data/processed/test`, applies the trained Spark MLlib model from `models/fraud_model`, and prints prediction results.
@@ -136,11 +191,17 @@ To start Jupyter Lab:
 docker compose --profile jupyter up -d jupyter
 ```
 
-Then open: 
-`http://localhost:8888`
+Then open:
 
-Token: 
-`fraud123`
+```text
+http://localhost:8888
+```
+
+Token:
+
+```text
+fraud123
+```
 
 ---
 
@@ -165,3 +226,15 @@ docker compose down
 ```
 
 Use `docker compose stop` only if you want to stop containers without removing them.
+
+On Windows, you can also run:
+
+```powershell
+.\stop.bat
+```
+
+On Linux / macOS:
+
+```bash
+./stop.sh
+```

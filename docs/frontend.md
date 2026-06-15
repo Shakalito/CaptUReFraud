@@ -2,7 +2,7 @@
 
 CaptUReFraud includes a React + Vite frontend for interacting with the FastAPI backend.
 
-The frontend provides a fraud monitoring interface where a user can load simulated transaction batches, adjust the fraud decision threshold, review model recommendations, make analyst decisions, and evaluate those decisions after revealing known labels.
+The frontend provides a fraud monitoring interface where a user can load simulated incoming transaction batches, adjust the fraud decision threshold, review model recommendations, inspect risk alerts, make analyst decisions, and evaluate those decisions after revealing known labels.
 
 ## Purpose
 
@@ -10,8 +10,10 @@ The frontend is designed as an analyst-oriented simulation interface.
 
 It allows the user to:
 
-- load simulated transaction records from the backend API
-- review fraud probabilities and system recommendations
+- load simulated incoming transaction records from the backend API
+- review fraud probabilities, risk levels, and system recommendations
+- inspect suspicious and fraud-level alerts
+- filter transactions by type, risk level, probability, and amount
 - adjust the decision threshold
 - observe business-level metrics
 - make allow/block analyst decisions
@@ -103,70 +105,40 @@ models/fraud_model/
 These are created by running the data preparation and model training workflow:
 
 ```bash
-python3 scripts/prepare_data.py
-python3 scripts/train_model.py
+docker compose exec app python3 scripts/prepare_data.py
+docker compose exec app python3 scripts/train_model.py
 ```
 
 The frontend itself does not create or load these artifacts directly.
 
-## Starting the backend
-
-From the project root, start the Docker app container:
-
-```bash
-docker compose up -d app
-docker compose exec app bash
-```
-
-Inside the container, start the FastAPI backend:
-
-```bash
-uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-The backend should be available at:
-
-```text
-http://localhost:8000
-```
-
-Health check:
-
-```bash
-curl http://localhost:8000/health
-```
-
-Expected response:
-
-```json
-{
-  "status": "ok"
-}
-```
-
 ## Starting the frontend
 
-From the project root:
+The recommended way to start the full application stack is from the project root:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose up -d
 ```
 
-The frontend should be available at:
+This starts both:
+
+- FastAPI backend on `http://localhost:8000`
+- React/Vite frontend on `http://localhost:5173`
+
+The helper scripts can also be used:
 
 ```text
-http://localhost:5173
+start.bat
+start.sh
 ```
+
+They build/start the Docker services and run the required dataset/model setup steps.
 
 ## Production build check
 
 To verify that the frontend can be built:
 
 ```bash
-cd frontend
-npm run build
+docker compose exec frontend npm run build
 ```
 
 The build output is created in:
@@ -182,8 +154,7 @@ The `dist/` directory is generated and should not be committed.
 To check frontend code quality:
 
 ```bash
-cd frontend
-npm run lint
+docker compose exec frontend npm run lint
 ```
 
 This runs ESLint and checks for basic JavaScript/React issues such as unused variables, invalid imports, or common code-quality problems.
@@ -192,26 +163,61 @@ This runs ESLint and checks for basic JavaScript/React issues such as unused var
 
 The frontend is organized around a simple analyst simulation workflow.
 
-### 1. Load transactions
+### 1. Load incoming transactions
 
-The user selects a batch size and clicks:
+The user selects a batch size and clicks the button for fetching incoming transactions.
 
-```text
-Load / refresh batch
-```
-
-This fetches a simulated transaction batch from the backend.
+This fetches a randomized simulated transaction batch from the backend.
 
 The frontend calls:
 
 ```text
 GET /simulation/batch
 GET /simulation/metrics
+GET /evaluation/model
 ```
 
 The backend handles Spark/model logic and returns structured API responses.
 
-### 2. Review decisions
+Each transaction can include:
+
+- `transaction_id`
+- transaction type
+- transaction amount
+- sender balance before and after the transaction
+- receiver balance before and after the transaction
+- fraud probability
+- system decision
+- risk level
+
+Balance fields come directly from the PaySim dataset. For some transaction types, especially `PAYMENT` and `CASH_IN`, destination balances may remain zero because of how the simulator represents merchants and cash agents.
+
+### 2. Review risk levels and alerts
+
+The frontend assigns a simple risk level based on the fraud probability and currently selected threshold:
+
+```text
+OK          -> low probability
+Suspicious  -> medium probability below the blocking threshold
+Fraud       -> probability greater than or equal to the blocking threshold
+```
+
+Suspicious and fraud-level transactions are also shown in a dedicated alerts section.
+
+Clicking an alert selects the related transaction in the analyst review panel.
+
+### 3. Filter transactions
+
+The transaction stream can be filtered by:
+
+- transaction type
+- risk level
+- minimum fraud probability
+- minimum amount
+
+Filtering is frontend-only and does not retrain the model or change backend simulation results.
+
+### 4. Review decisions
 
 After loading transactions, the user can select rows in the transaction table.
 
@@ -219,28 +225,26 @@ For each selected transaction, the analyst review panel shows:
 
 - model prediction
 - fraud probability
+- risk level
 - system decision
+- transaction details
 - hidden true label before evaluation
 - hidden prediction outcome before evaluation
 
 The user can choose:
 
 ```text
-Mark allow
-Mark block
+allow
+block
 ```
 
 Analyst decisions are stored only in frontend state.
 
 No backend persistence is used at this stage.
 
-### 3. Evaluate results
+### 5. Evaluate results
 
-After reviewing one or more transactions, the user can click:
-
-```text
-Evaluate decisions
-```
+After reviewing one or more transactions, the user can click the evaluation button.
 
 Only then does the UI reveal:
 
@@ -260,16 +264,13 @@ Default threshold:
 0.8
 ```
 
-The user can adjust the threshold with the slider and apply it with:
-
-```text
-Apply threshold
-```
+The user can adjust the threshold with the slider and apply it.
 
 Changing the threshold refreshes:
 
 - simulation batch
 - business metrics
+- evaluation metrics
 
 The threshold affects operational decisions without retraining the model.
 
@@ -284,7 +285,7 @@ Higher threshold generally means:
 - fewer legitimate transactions blocked
 - more frauds may be missed
 
-The frontend displays this trade-off through business metrics and simple visual indicators.
+The frontend displays this trade-off through business metrics and evaluation indicators.
 
 ## Business metrics shown
 
@@ -338,15 +339,8 @@ GET /health
 GET /metadata
 GET /simulation/batch
 GET /simulation/metrics
+GET /evaluation/model
 ```
-
-Earlier development versions also used:
-
-```text
-GET /prediction/sample
-```
-
-The final analyst workflow primarily relies on batch simulation and metrics endpoints.
 
 ## CORS
 
@@ -382,26 +376,3 @@ The frontend does not:
 - replace backend validation or simulation logic
 
 The frontend consumes backend API responses and renders an interactive analyst-facing interface.
-
-## Known limitations
-
-Current limitations:
-
-- analyst decisions are stored only in frontend state
-- decisions are reset when a new batch is loaded
-- true labels are available because this is a simulation dataset
-- real banking workflows would usually receive fraud confirmation later
-- transaction details are limited by the current backend response
-- no authentication or user accounts are implemented
-- no persistent decision history is implemented
-- no production deployment configuration is included yet
-
-Possible future improvements:
-
-- persist analyst decisions through a backend endpoint
-- add transaction-level domain fields such as amount, type, origin balance, and destination balance
-- add historical analyst performance
-- add exportable reports
-- add richer evaluation charts
-- add frontend tests
-- improve final production styling

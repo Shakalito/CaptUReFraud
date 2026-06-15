@@ -2,8 +2,8 @@
 
 This project requires downloading a dataset from Kaggle.
 
-The dataset can be downloaded manually or using the provided script,
-which ensures a reproducible setup.
+The dataset can be downloaded manually or using the provided script.
+The script stores the dataset in the project directory under `data/raw/`.
 
 ---
 
@@ -39,18 +39,32 @@ chmod 600 ~/.kaggle/kaggle.json
 The recommended workflow is Docker-based. Build the image from the project root:
 
 ```bash
-docker compose build --no-cache
+docker compose build
 ```
+
+The startup scripts can also run the dataset setup automatically:
+
+```bash
+./start.sh
+```
+
+On Windows:
+
+```powershell
+.\start.bat
+```
+
 For manual local execution outside Docker, install:
 ```bash
 pip install kaggle
 ```
 
-Inside the container, verify:
+Verify that the Kaggle CLI is available:
 
 ```bash
 kaggle --version
 ```
+
 If the command works, you should see something like:
 ```bash
 Kaggle CLI x.x.x
@@ -59,23 +73,52 @@ If not, go to the troubleshooting section.
 
 ---
 ## 4. Download dataset
-From the project root directory, start the Docker app container:
+
+From the project root directory, run:
 
 ```bash
-docker compose up -d app
-docker compose exec app bash
-```
-Inside the container, run:
-```bash
-python3 scripts/download_data.py
+python scripts/download_data.py
 ```
 
-The dataset will be saved to: `data/raw`
+On Windows:
+
+```powershell
+python scripts\download_data.py
+```
+
+The dataset will be saved to:
+
+```text
+data/raw/
+```
+
+The script is safe to run multiple times. If a CSV file already exists in `data/raw/`, the download step is skipped.
 
 ---
-## 5. Troubleshooting
+## 5. Manual download option
 
-### 5.1 If kaggle.json was not downloaded automatically
+If Kaggle API is not configured, download the dataset manually from:
+
+```text
+https://www.kaggle.com/datasets/rupakroy/online-payments-fraud-detection-dataset
+```
+
+Then place the CSV file in:
+
+```text
+data/raw/
+```
+
+Expected file:
+
+```text
+data/raw/PS_20174392719_1491204439457_log.csv
+```
+
+---
+## 6. Troubleshooting
+
+### 6.1 If kaggle.json was not downloaded automatically
 You can create it manually.
 
 Create a file `kaggle.json`
@@ -93,16 +136,24 @@ You can find:
 username → your Kaggle profile name
 key → from Kaggle API section
 ```
-### 5.2 Script does nothing
-Dataset probably already exists in `data/raw`
 
-### 5.3 `kaggle --version` fails
-Ensure kaggle is installed
+### 6.2 Script does nothing
+Dataset probably already exists in `data/raw/`.
+
+### 6.3 `kaggle --version` fails
+Ensure kaggle is installed:
+
 ```bash
 pip install kaggle
 ```
-- Ensure `kaggle.json` is correctly placed in .kaggle directory
+
+Also ensure `kaggle.json` is correctly placed in the `.kaggle` directory.
+
+### 6.4 Dataset is saved outside the project directory
+Run the current version of `scripts/download_data.py` from the project root.
+The script resolves the project directory automatically and writes to `data/raw/`.
 
 --- 
-### Note:
-The script is safe to run multiple times
+### Note
+
+Raw data is not tracked by Git.

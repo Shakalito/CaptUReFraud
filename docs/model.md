@@ -15,10 +15,12 @@ Binary classification:
 
 ## Input
 
-The current model expects processed input data with:
+The model expects processed input data with:
 
-- `features` column: Spark ML vector,
+- `features` column: Spark ML vector used for prediction,
 - `label` column: target variable used during training and evaluation.
+
+The processed dataset also keeps selected transaction fields, such as `step`, `type`, `amount`, and balance columns, so the API and frontend can display transaction details. These fields are not a replacement for the assembled `features` vector used by the model.
 
 Raw transactions must be transformed by the preprocessing pipeline before prediction.
 
@@ -28,23 +30,30 @@ Model is trained on: `data/processed/train/`
 
 Tested on: `data/processed/test/`
 
+The test dataset is also used by the simulation API as the source of simulated incoming transaction batches after the model has already been trained.
+
 ## Reproducible model training
 
 The model can be regenerated without running notebooks by using the training script.
 
-Run inside the Docker container:
+From the project root, start the Docker services:
+
+```bash
+docker compose up -d
+```
 
 Before training, make sure processed datasets exist.
 
 If needed, generate them from raw data:
 
 ```bash
-python3 scripts/prepare_data.py
+docker compose exec app python3 scripts/prepare_data.py
 ```
+
 Then train the model:
 
 ```bash
-python3 scripts/train_model.py
+docker compose exec app python3 scripts/train_model.py
 ```
 
 The script:
@@ -55,8 +64,21 @@ The script:
 - saves the trained model to `models/fraud_model/`.
 
 After training, verify the model with:
+
 ```bash
-python3 scripts/predict_sample.py
+docker compose exec app python3 scripts/predict_sample.py
+```
+
+The startup scripts can also run the setup workflow automatically:
+
+```bash
+start.bat
+```
+
+or:
+
+```bash
+./start.sh
 ```
 
 ## Imbalance handling
@@ -85,10 +107,19 @@ Secondary metrics:
 
 The model produces:
 
-prediction: predicted class, 0 or 1,
-probability: vector with class probabilities.
+- `prediction`: predicted class, `0` or `1`,
+- `probability`: vector with class probabilities.
 
-For fraud detection, the important value is the probability of class 1.
+For fraud detection, the important value is the probability of class `1`.
+
+The API converts this fraud probability into an operational decision using the selected threshold:
+
+```text
+fraud_probability >= threshold -> block
+fraud_probability < threshold  -> allow
+```
+
+The default threshold is `0.8`.
 
 ## Persistence
 
@@ -103,8 +134,9 @@ PipelineModel.load("models/fraud_model")
 ```
 
 ## Notes
+
 - The persisted model is saved as a Spark `PipelineModel`.
-- The current prediction interface expects processed input data with a features column.
+- The current prediction interface expects processed input data with a `features` column.
 - Raw transactions must be transformed by the preprocessing pipeline before prediction.
 - Feature order and vector structure must match the training pipeline.
 - Do not modify processed datasets manually.

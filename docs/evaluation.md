@@ -20,11 +20,11 @@ data/processed/test/
 models/fraud_model/
 ```
 
-If these artifacts are missing, run:
+If these artifacts are missing, run from the project root after starting Docker Compose:
 
 ```bash
-python3 scripts/prepare_data.py
-python3 scripts/train_model.py
+docker compose exec app python3 scripts/prepare_data.py
+docker compose exec app python3 scripts/train_model.py
 ```
 
 The evaluation endpoints and frontend evaluation dashboard do not train the model. They use the existing trained model and processed test data.
@@ -85,8 +85,8 @@ It answers questions such as:
 
 - how many frauds were missed
 - how many legitimate transactions were blocked
-- how much estimated fraud loss remains
-- how much estimated blocking cost was introduced
+- how much estimated fraud loss remains, calculated from the amounts of missed fraud transactions
+- how much estimated blocking cost was introduced for legitimate transactions incorrectly blocked
 - what the total estimated cost is
 
 Business metrics are exposed through:
@@ -99,7 +99,23 @@ Business metrics and classification metrics are related, but they are not the sa
 
 Classification metrics explain prediction quality.
 
-Business metrics explain operational impact.
+Business metrics explain operational impact. In the current implementation, missed fraud loss is amount-based, while blocking cost is a simplified fixed operational cost per blocked legitimate transaction.
+
+Example response structure:
+
+```json
+{
+  "total_transactions": 1271628,
+  "total_frauds": 1609,
+  "detected_frauds": 1595,
+  "missed_frauds": 14,
+  "blocked_legit_transactions": 6,
+  "fraud_recall": 0.9912989434431324,
+  "estimated_fraud_loss": 6426570.9799999995,
+  "estimated_blocking_cost": 300.0,
+  "estimated_total_cost": 6426870.9799999995
+}
+```
 
 ### 3. Analyst decision evaluation
 
@@ -459,6 +475,8 @@ The evaluation section includes:
 - false negative rate
 - confusion matrix
 - false positive / false negative interpretation
+
+The frontend also displays risk levels and suspicious/fraud alerts for the currently loaded transaction batch. These are UI-level indicators derived from fraud probability and the selected threshold.
 
 When the user changes the threshold and applies it, the frontend refreshes:
 
