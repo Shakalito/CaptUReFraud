@@ -35,6 +35,9 @@ docker compose build
 docker compose up -d
 ```
 
+**Important!**
+After that run [train.bat](train.bat) for training model.
+
 This starts the the default application stack
 - FastAPI backend
 - React/Vite frontend  
